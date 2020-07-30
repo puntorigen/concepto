@@ -22,8 +22,8 @@
   "main": "lib/index.js",
   "scripts": {
     "clean": "rimraf ./coverage ./lib",
-    "dev": "cross-env NODE_ENV=development rollup -c -o lib/index.js",
-    "build": "cross-env NODE_ENV=production rollup -c -o lib/index.js",
+    "dev": "cross-env NODE_ENV=development rollup -c -o lib/index.js --no-strict",
+    "build": "cross-env NODE_ENV=production rollup -c -o lib/index.js && npm run docs",
     "test": "cross-env NODE_ENV=test jest",
     "test:watch": "cross-env NODE_ENV=test jest --watch",
     "test:cover": "cross-env NODE_ENV=test jest --coverage",
@@ -31,7 +31,8 @@
     "flow": "flow",
     "flow-typed": "npm run clean && flow-typed install --overwrite || true",
     "lint": "eslint src",
-    "prepublish": "npm run clean && npm run test && npm run flow && npm run lint && npm run build"
+    "prepublish": "npm run clean && npm run test && npm run flow && npm run lint && npm run build",
+    "docs": "jsdoc2md -t README.hbs src/*.js > README.md"
   },
   "dependencies": {
     "babel-runtime": "^6.26.0"
@@ -62,6 +63,10 @@
     "rollup-plugin-commonjs": "9.1.0",
     "rollup-plugin-node-resolve": "3.3.0",
     "rollup-plugin-replace": "2.0.0",
-    "rollup-plugin-uglify": "3.0.0"
+    "rollup-plugin-uglify": "3.0.0",
+    "jsdoc-to-markdown": "^6.0.1"
+  },
+  "scarfSettings": {
+    "enabled": false
   }
 }
