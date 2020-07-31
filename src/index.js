@@ -1,90 +1,25 @@
-// Concepto DSL Base Class
-class concepto {
-
-	constructor({ config }={}) {
-		let def_config = {
-			silent:false,
-			prefix:''
-		};
-		this.config = {...def_config,...config};
-		this.son_methods=this.getInstanceMethodNames(this);
-		this.node_funcs=this.node_types();
-		console.log('son methods dice',this.son_methods);
-		console.log('this.node_funcs dice',this.node_funcs);
-		this.onInit();
-		console.log('first node executed says:',this.node_funcs['def_mapa'].func({}));
-	}
-
-	// ********************
-	// template methods
-	// ********************
-
-	onInit() {
-		console.log('hello from concepto.js')
-	}
-
-	reply_template(init={}) {
-		let resp = { init:'', open:'', close:'', hasChildren:true, type:'simple', valid:true, _meta:{ _set:{}, cache:true } };
-		return {...resp,...init};
-	}
-
-	// ********************
-	// private methods
-	// ********************
-	node_types() {
-		return [];
-	}
-
-	getInstanceMethodNames(obj, stop) {
-	  let array = [];
-	  let proto = Object.getPrototypeOf (obj);
-	  let me = this;
-	  while (proto && proto !== stop) {
-	  	console.log('processing proto:',proto);
-	    Object.getOwnPropertyNames (proto)
-	      .forEach ((name,pos) => {
-	        if (name !== 'constructor') {
-	          if (me.hasMethod (proto, name)) {
-            	array.push ({ name:name, pos:pos, class:proto, params:me.getParamNames(me[name]) });
-	          }
-	        }
-	      });
-	    proto = Object.getPrototypeOf (proto);
-	    stop = proto; //we only need the first record, not our parents.
-	  }
-	  return array;
-	}
-
-	getParamNames(func) {
-		let STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
-		let ARGUMENT_NAMES = /([^\s,]+)/g;
-		let fnStr = func.toString().replace(STRIP_COMMENTS, '');
-		// @TODO 30-jul-20 add support for params of type spread (ex. onlyOnVue2)
-		let result = fnStr.slice(fnStr.indexOf('(')+1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
-		if(result === null)
-		 result = [];
-		return result;
-	}
-
-	hasMethod (obj, name) {
-	  const desc = Object.getOwnPropertyDescriptor (obj, name);
-	  return !!desc && typeof desc.value === 'function';
-	}
-
-	throwIfMissing(name) {
-        throw new Error('Missing '+name+' parameter!');
-    }
-}
+import concepto from 'concepto'
 
 // VUE DSL Class
-import extra_commands from './extra_commands'
+/**
+* Concepto VUE DSL Class: A class for compiling vue.dsl Concepto diagrams into VueJS WebApps.<br/><caption>Note: You need to pass all arguments as an Object with keys.</caption>
+* @name 	vue
+* @module 	vue
+**/
+import internal_commands from './internal_commands'
 export default class vue extends concepto {
 
-	constructor({ config }={}) {
-		super(config);
+	constructor({ file,config }) {
+		// we can get class name, from package.json name key (after its in its own project)
+		let my_config = {
+			class: 'vue',
+			debug: true
+		};
+		let nuevo_config = {...my_config,...config};
+		super({ file:file, config:nuevo_config }); //,...my_config
 	}
 
-	node_types() {
+	commands() {
 		let me = this, nodes = {
 			'def_mapa': {
 				x_text:'mapa', x_icons:'idea',
@@ -95,16 +30,22 @@ export default class vue extends concepto {
 				}
 			}
 		};
-		let external = extra_commands(me);
-		return {...nodes,...external};
+		// add extra commands
+		return nodes;
 	}
 
-	// ********************
-	// template methods
-	// ********************
+	// ******************************
+	// methods to be event called
+	// ******************************
 
-	onInit() {
-		console.log('hello from vue')
+	async onInit() {
+		this.x_console.outT({ message:`hello from vue`, color:`yellow` });
+		//console.log('hello from vue');
+		this.addCommands(internal_commands);
+		//let test=this.x_commands['def_otro'].func({});
+		//console.log('test def internal_commands exec',test);
+		if (this.x_config.debug) this.x_console.out({ message:'x_commands',data:this.x_commands });
+		//console.log('dsl_parser says:',this.dsl_parser);
 	}
 
 	/** testing definition methods...
