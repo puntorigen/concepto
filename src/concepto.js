@@ -12,6 +12,7 @@ export default class concepto {
 			console:true,
 			debug:false,
 			cache:true,
+			dsl_git:true,
 			prefix:''
 		};
 		this.x_config = {...def_config,...config};
@@ -51,8 +52,16 @@ export default class concepto {
 			}
 			this.x_console.outT({ message:`time passed since start .. ${this.secsPassed_()} secs`, color:'cyan' });
 			// @TODO create github compatible DSL
-			tmp.dsl_git_path = path.join(tmp.directory,'dsl_git');
-			this.x_console.outT({ message:`dsl_git dir`, data:tmp.dsl_git_path });
+			if (this.x_config.dsl_git) {
+				this.x_console.outT({ message:`creating github compatible DSL`, color:'green' });
+				let for_git = await this.dsl_parser.createGitVersion();
+				// save dsl git file
+				tmp.dsl_git_path = path.join(tmp.directory,'dsl_git');
+				this.x_console.outT({ message:`dsl_git dir`, data:tmp.dsl_git_path });
+				// @TODO create dsl_git dir and save file contents as dsl_git/(filename).dsl
+				//
+				this.x_console.outT({ message:`ready github compatible DSL`, color:'green' });
+			}
 			// continue
 			this.x_flags.init_ok = true;
 			await this.onInit();
