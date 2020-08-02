@@ -2,11 +2,11 @@ import concepto from 'concepto'
 
 // VUE DSL Class
 /**
-* Concepto VUE DSL Class: A class for compiling vue.dsl Concepto diagrams into VueJS WebApps.<br/><caption>Note: You need to pass all arguments as an Object with keys.</caption>
+* Concepto VUE DSL Class: A class for compiling vue.dsl Concepto diagrams into VueJS WebApps.
 * @name 	vue
 * @module 	vue
 **/
-import internal_commands from './internal_commands'
+import internal_commands from './commands'
 export default class vue extends concepto {
 
 	constructor({ file,config }) {
@@ -41,10 +41,11 @@ export default class vue extends concepto {
 	async onInit() {
 		this.x_console.outT({ message:`hello from vue`, color:`yellow` });
 		//console.log('hello from vue');
-		this.addCommands(internal_commands);
+		await this.addCommands(internal_commands);
 		//let test=this.x_commands['def_otro'].func({});
 		//console.log('test def internal_commands exec',test);
-		if (this.x_config.debug) this.x_console.out({ message:'x_commands',data:this.x_commands });
+		this.debug('x_commands',this.x_commands);
+		//if (this.x_config.debug) this.x_console.out({ message:'x_commands',data:this.x_commands });
 		//console.log('dsl_parser says:',this.dsl_parser);
 	}
 
