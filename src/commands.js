@@ -41,8 +41,11 @@ export default async function(context) {
 	}
 	*/
 	return {
-		'def_otro': {
-			x_icons:'cancel',
+		'def_imagen': {
+			x_icons:'idea',
+			x_not_icons:'button_cancel,desktop_new,help',
+			x_not_empty:'attributes[:src]',
+			x_empty:'kiko',
 			func:async function(node) {
 				let resp = me.reply_template({ otro:'Pablo' });
 				//console.log('text:' + this.x_text + ' node dice Hola! from external commands',this);

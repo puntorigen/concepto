@@ -22,7 +22,7 @@ export default class vue extends concepto {
 	commands() {
 		let me = this, nodes = {
 			'def_mapa': {
-				x_text:'mapa', x_icons:'idea',
+				x_icons:'idea',
 				func:function(node) {
 					let resp = me.reply_template({ otro:'Pablo' });
 					console.log('text:' + this.x_text + ' node dice Hola!',this);
