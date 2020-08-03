@@ -112,7 +112,7 @@ export default class concepto {
 	}
 
 	//Called after parsing nodes
-	async onAfterWritter(processedNodes) {
+	async onAfterWritten(processedNodes) {
 		return processedNodes;
 	}
 
@@ -175,8 +175,9 @@ export default class concepto {
 		}
 	}
 
-	async findCommand(node=this.throwIfMissing('node'),justone=false) {
-		let resp = { name:'not_found', hint:'failover command'}, xtest = [];
+	//returns an Object or an Array of Objects (type commands)
+	async findCommand(node=this.throwIfMissing('node'),justone=true) {
+		let resp = {...this.reply_template(),...{ id:'not_found', hint:'failover command'}}, xtest = [];
 		let keys = 'x_icons,x_not_icons,x_not_empty,x_not_text_contains,x_empty,x_text_starts,x_text_contains,x_level,x_or_hasparent,x_all_hasparent,x_or_isparent';
 		let command_requires = node_features = command_defaults = setObjectKeys(keys,'');
 		let def_matched = matched = setObjectKeys(keys,true), comm;
@@ -191,7 +192,8 @@ export default class concepto {
 			delete command_requires.func;
 			// test command features vs node features
 			// test 1: icon match
-			if (this.x_config.debug) console.time(`${key} x_icons`);
+			this.debug_time({ id:`${key} x_icons` });
+			//if (this.x_config.debug) this.x_console.time({ id:`${key} x_icons` });
 			if (command_requires['x_icons']!='') {
 				for (let qi of command_requires.x_icons.split(',')) {
 					matched.x_icons = (node.icons.includes(qi))?true:false;
@@ -199,9 +201,10 @@ export default class concepto {
 					//await setImmediatePromise();
 				}
 			}
-			if (this.x_config.debug) console.timeEnd(`${key} x_icons`);
+			this.debug_timeEnd({ id:`${key} x_icons` });
+			//if (this.x_config.debug) this.x_console.timeEnd({ id:`${key} x_icons` });
 			// test 2: x_not_icons
-			if (this.x_config.debug) console.time(`${key} x_not_icons`);
+			this.debug_time({ id:`${key} x_not_icons` });
 			if (matched.x_icons && command_requires['x_not_icons']!='') {
 				// special case first
 				if (node.icons.length>0 && command_requires['x_not_icons']!='' && ['*'].includes(command_requires['x_not_icons'])) {
@@ -211,10 +214,10 @@ export default class concepto {
 					matched.x_not_icons = (this.array_intersect(command_requires['x_not_icons'].split(','), node.icons).length>1)?false:true;
 				}
 			}
-			if (this.x_config.debug) console.timeEnd(`${key} x_not_icons`);
+			this.debug_timeEnd({ id:`${key} x_not_icons` });
 			// test 3: x_not_empty. example: attributes[event,name] aka key[value1||value2] in node
 			// supports multiple requirements using + as delimiter "attributes[event,name]+color"
-			if (this.x_config.debug) console.time(`${key} x_not_empty`);
+			this.debug_time({ id:`${key} x_not_empty` });
 			if (command_requires['x_not_empty']!='' && allTrue(matched,keys)) {
 				//this.debug(`test x_not_empty: ${command_requires['x_not_empty']}`);
 				// transform x_not_empty value => ex. attributes[event,name]+color => attributes[event+name],color in com_reqs
@@ -256,10 +259,10 @@ export default class concepto {
 					}
 				}
 			}
-			if (this.x_config.debug) console.timeEnd(`${key} x_not_empty`);
+			this.debug_timeEnd({ id:`${key} x_not_empty` });
 			// test 4: x_not_text_contains
 			// can have multiple values.. ex: margen,arriba
-			if (this.x_config.debug) console.time(`${key} x_not_text_contains`);
+			this.debug_time({ id:`${key} x_not_text_contains` });
 			if (command_requires['x_not_text_contains']!='' && allTrue(matched,keys)) {
 				for (let word of command_requires['x_not_text_contains'].split(',')) {
 					if (node.text.indexOf(word)!=-1) {
@@ -268,9 +271,9 @@ export default class concepto {
 					}
 				}
 			}
-			if (this.x_config.debug) console.timeEnd(`${key} x_not_text_contains`);
+			this.debug_timeEnd({ id:`${key} x_not_text_contains` });
 			// test 5: x_empty (node keys that must be empty (undefined also means not empty))
-			if (this.x_config.debug) console.time(`${key} x_empty`);
+			this.debug_time({ id:`${key} x_empty` });
 			if (command_requires['x_empty']!='' && allTrue(matched,keys)) {
 				for (let key of command_requires['x_empty'].split(',')) {
 					let testpath = getVal(node,key);
@@ -286,9 +289,9 @@ export default class concepto {
 					}
 				}
 			}
-			if (this.x_config.debug) console.timeEnd(`${key} x_empty`);
+			this.debug_timeEnd({ id:`${key} x_empty` });
 			// test 6: x_text_contains
-			if (this.x_config.debug) console.time(`${key} x_text_contains`);
+			this.debug_time({ id:`${key} x_text_contains` });
 			if (command_requires['x_text_contains']!='' && allTrue(matched,keys)) {
 				// @TODO here we are
 				if (command_requires['x_text_contains'].indexOf('|')!=-1) {
@@ -310,15 +313,15 @@ export default class concepto {
 					}
 				}
 			}
-			if (this.x_config.debug) console.timeEnd(`${key} x_text_contains`);
+			this.debug_timeEnd({ id:`${key} x_text_contains` });
 			// test 7: x_level - example: '2,3,4' (any) or '>2,<7' (all)
-			if (this.x_config.debug) console.time(`${key} x_level`);
+			this.debug_time({ id:`${key} x_level` });
 			if (command_requires['x_level']!='' && allTrue(matched,keys)) {
 				matched.x_level=numberInCondition(node.level,command_requires['x_level']);	
 			}
-			if (this.x_config.debug) console.timeEnd(`${key} x_level`);
+			this.debug_timeEnd({ id:`${key} x_level` });
 			// test 8: x_or_hasparent (currently mockup logic)
-			if (this.x_config.debug) console.time(`${key} x_or_hasparent`);
+			this.debug_time({ id:`${key} x_or_hasparent` });
 			if (command_requires['x_or_hasparent']!='' && allTrue(matched,keys)) {
 				// @TODO need to create hasParentID method
 				matched.x_or_hasparent=false;
@@ -326,9 +329,9 @@ export default class concepto {
 					matched.x_or_hasparent=true;
 				}
 			}
-			if (this.x_config.debug) console.timeEnd(`${key} x_or_hasparent`);
+			this.debug_timeEnd({ id:`${key} x_or_hasparent` });
 			// test 9: x_all_hasparent (currently mockup logic)
-			if (this.x_config.debug) console.time(`${key} x_all_hasparent`);
+			this.debug_time({ id:`${key} x_all_hasparent` });
 			if (command_requires['x_all_hasparent']!='' && allTrue(matched,keys)) {
 				// @TODO need to create hasParentID method
 				for (let key of command_requires['x_all_hasparent'].split(',')) {
@@ -338,9 +341,9 @@ export default class concepto {
 					}
 				}
 			}
-			if (this.x_config.debug) console.timeEnd(`${key} x_all_hasparent`);
+			this.debug_timeEnd({ id:`${key} x_all_hasparent` });
 			// test 10: x_or_isparent (currently mockup logic)
-			if (this.x_config.debug) console.time(`${key} x_or_isparent`);
+			this.debug_time({ id:`${key} x_or_isparent` });
 			if (command_requires['x_or_isparent']!='' && allTrue(matched,keys)) {
 				// @TODO need to create isExactParentID method
 				matched.x_or_isparent=false;
@@ -351,14 +354,15 @@ export default class concepto {
 					}	
 				}
 			}
-			if (this.x_config.debug) console.timeEnd(`${key} x_or_isparent`);
-			// **********
+			this.debug_timeEnd({ id:`${key} x_or_isparent` });
+			// ***************************
 			// if we passed all tests ... 
+			// ***************************
 			if (allTrue(matched,keys)) {
 				// count num of defined requires on matched command (more is more exact match, aka priority)
 				let count = Object.entries(command_requires).reduce((n, x) => n + (x[1] != ''), 0);
 				// assign resp
-				resp = {id:key, priority:count};
+				resp = {...{x_priority:-1},...this.x_commands[key],...{x_id:key, priority:count}};
 				if (!justone) {
 					xtest.push(resp);
 				} else {
@@ -370,28 +374,80 @@ export default class concepto {
 			//await setImmediatePromise();
 		}
 		// sort by priority
-		if (this.x_config.debug) console.time(`sorting by priority`);
+		this.debug_time({ id:`sorting by priority` });
 		let sorted = xtest.sort(function(a,b) {
-			return b.priority-a.priority;
+			if (a.x_priority!=-1 && b.x_priority!=-1) {
+				// sort by x_priority
+				return b.x_priority-a.x_priority;
+			} else {
+				// sort by priority (number of features)
+				return b.priority-a.priority;
+			}
 		});
-		if (this.x_config.debug) console.timeEnd(`sorting by priority`);
+		this.debug_timeEnd({ id:`sorting by priority` });
 		// reply
 		if (!justone) {
+			/*
 			// get just the ids
-			if (this.x_config.debug) console.time(`grabing only ids sorted`);
 			let sorted_ids = sorted.map(function(elem,value) {
 				return elem.id;	
 			});
-			if (this.x_config.debug) console.timeEnd(`grabing only ids sorted`);
-			resp=sorted_ids;
-		} else {
-			resp=resp.id;
+			*/
+			// return the array of commands, sorted by 'priority' key
+			resp=sorted;
 		}
-		console.log(`findCommand resp`,resp);
+		//console.log(`findCommand resp`,resp);
 		return resp;
 	}
 
-	
+	async findCommandValid4Eval(node=this.throwIfMissing('node'),object=false) {
+		this.debug({ message:'findCommandValid4Eval called for node '+node.id, color:'yellow' });
+		let commands_ = await this.findCommand(node,false), reply={};
+		// @TODO debug and test
+		if (commands_.length==0) {
+			this.debug({ message:'findCommandValid4Eval: no command found.', color:'red' });
+		} else if (commands_.length==1) {
+			reply = commands_[1];
+			// try executing the node on the found commands_
+			try {
+				let test = await this.x_commands[reply.x_id].func(node);
+				reply.exec = test;
+				// @TODO test if _f4e is used; because its ugly
+				reply._f4e = commands_[1].x_id;
+				this.debug({ message:`findCommandValid4Eval: 1/1 applying command ${commands_[1].x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
+			} catch(test_err) {
+				this.debug({ message:`findCommandValid4Eval: 1/1 applying command ${commands_[1].x_id} ... ERROR! (nodeid:${node.id})`, color:'red' });
+				// @TODO emit('internal_error','findCommandValid4Eval')
+			}
+		} else {
+			// more than one command found
+			this.debug({ message:`findCommandValid4Eval: ${commands_.length} commands found: (nodeid:${node.id})`, color:'green' });
+			// test each command
+			for (let qm_index in commands_) {
+				let qm = commands_[qm_index];
+				try {
+					let test = await this.x_commands[qm.x_id].func(node);
+					if (test.valid) {
+						this.debug({ message:`findCommandValid4Eval: ${parseInt(qm_index)+1}/${commands_.length} testing command ${qm.x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
+						this.debug({ message:'---------------------', time:false });
+						if (object) {
+							reply=test;
+						} else {
+							// @TODO test if _f4e is used; because its ugly
+							reply=qm;
+							reply.exec=test;
+							reply._f4e=qm.x_id;
+						}
+						break;
+					}
+				} catch(test_err1) {
+					this.debug({ message:`findCommandValid4Eval: error executing command ${qm} (nodeid:${node.id})`, data:test_err1, color:'red' });
+				}
+			}
+		}
+		if (Object.keys(reply).length==0) reply=false;
+		return reply;
+	}
 
 	// **********************
 	// public helper methods
@@ -424,18 +480,42 @@ export default class concepto {
 
     // public helpers
     debug(message,data) {
-		if (this.x_config.debug) {
-			if (data) {
-				this.x_console.outT({ prefix:'debug,dim', color:'dim', message:message, data:data });
-			} else {
-				this.x_console.outT({ prefix:'debug,dim', color:'dim', message:message });
-			}
+    	let params={};
+    	if (arguments.length==1 && typeof arguments[0] === 'object') {
+    		params=arguments[0];
+    	} else {
+    		params={ message, data };
+    	}
+		if (this.x_config.debug && params.time) {
+			this.x_console.outT({...{ prefix:'debug,dim', color:'dim' },...params});
+		} else if (this.x_config.debug) {
+			this.x_console.out({...{ prefix:'debug,dim', color:'dim' },...params});
+		}
+	}
+	debug_time() {
+		if (this.x_config.debug && arguments.length>0) {
+			this.x_console.time(arguments[0]);
+		}
+	}
+	debug_timeEnd() {
+		if (this.x_config.debug && arguments.length>0) {
+			this.x_console.timeEnd({...{ color:'dim',prefix:'debug,dim' },...arguments[0]});
 		}
 	}
 
-	// true if given node it has a brother of given x_id
+	// true if given node it has a brother of given x_id (command)
 	hasBrotherID(id=this.throwIfMissing('id'),x_id=this.throwIfMissing('x_id')) {
-		// @TODO after creating method 'findMethodValid4Eval'
+		// @TODO test it after having 'real' commands on some parser 3-ago-20
+		let brother_ids = this.dsl_parser.getBrotherNodesIDs({ id, before:true, after:true }).split(',');
+		let brother_x_ids = [], resp=false;
+		for (let q of brother_ids) {
+			let node = this.dsl_parser.getNode({ id:q, recurse:false });
+			let command = findCommandValid4Eval(node);
+			if (brother_x_ids.includes(x_id)) return true;
+			brother_x_ids.push(command.x_id);
+		}
+		resp = (brother_x_ids.includes(x_id));
+		return resp;
 	}
 
 	//true if given node has a brother before it
@@ -489,6 +569,12 @@ export default class concepto {
 			}
 		}
 		return resp.join(' ');
+	}
+
+	cleanIDs4node(node=this.throwIfMissing('node')) {
+		let copy = node;
+		delete copy.id;
+		return copy;
 	}
 
 }

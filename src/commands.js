@@ -50,6 +50,7 @@ export default async function(context) {
 			func:async function(node) {
 				let resp = me.reply_template({ otro:'Pablo' });
 				//console.log('text:' + this.x_text + ' node dice Hola! from external commands',this);
+				resp.valid=true;
 				return resp;
 			}
 		}
