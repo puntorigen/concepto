@@ -19,14 +19,14 @@ export default async function(context) {
 		x_empty: '',
 		x_text_starts: '',
 		x_text_contains: '',
+		x_level: '2,>2,<5,..',
 		x_all_hasparent: 'def_padre_otro',
 		x_or_hasparent: '',
 		x_or_isparent: '',
-		x_level: '2,>2,<5,..',
 		autocomplete: {
 			'key_text': 'otro', //activate autocomplete if the node text equals to this
 			'key_icon': 'idea', //activate autocomplete if the node has this icon
-			'description': 'Testing node',
+			'hint': 'Testing node',
 			'attributes': {
 				'from': {
 					'type': 'int',
@@ -45,7 +45,8 @@ export default async function(context) {
 			x_icons:'idea',
 			x_not_icons:'button_cancel,desktop_new,help',
 			x_not_empty:'attributes[:src]',
-			x_empty:'kiko',
+			x_empty:'',
+			x_level:'>2',
 			func:async function(node) {
 				let resp = me.reply_template({ otro:'Pablo' });
 				//console.log('text:' + this.x_text + ' node dice Hola! from external commands',this);
