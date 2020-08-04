@@ -4,7 +4,7 @@ var myArgs = process.argv.slice(2);
 (async () => {
     // testing code here
     let file = (myArgs.length>0)?myArgs[0]:'vue.dsl';
-    let base = new vue({ file:file, config:{ debug:true } });
+    let base = new vue(file,{ debug:true });
     await base.addCommands(require('./more_commands.js'));
     await base.init();
     nodetest = await base.dsl_parser.getNode({ id: 'ID_789178185' }); // ID_789178185=imagen
@@ -14,10 +14,10 @@ var myArgs = process.argv.slice(2);
     console.timeEnd('findCommand');
     console.log('findCommand reply',findcom);
 
-    console.time('findCommandValid4Eval');
-    let findcom2 = await base.findCommandValid4Eval(nodetest,false);
-    console.timeEnd('findCommandValid4Eval');
-	console.log('findCommandValid4Eval reply',findcom2);
+    console.time('findValidCommand');
+    let findcom2 = await base.findValidCommand(nodetest,false);
+    console.timeEnd('findValidCommand');
+	console.log('findValidCommand reply',findcom2);
 
     console.log('total time passed, since constructor: '+base.secsPassed_()+' secs');
     // call writer (when it exists haha)

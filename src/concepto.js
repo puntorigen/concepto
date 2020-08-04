@@ -3,9 +3,21 @@
 * @name 	concepto
 * @module 	concepto
 **/
+
+/**
+ * A node object representation of a DSL node.
+ * @typedef {Object} Node
+ * @property {number} level - Indicates the depth level from the center of the dsl map.
+ * @property {string} text - Indicates the text defined in the node itself.
+ * @property {string} text_rich - Indicates the html defined in the node itself.
+ * @property {string} text_note - Indicates the text/html defined in the notes view of the node (if any).
+ * @property {string} image - Image link defined as an image within the node.
+ * @property {string} style - Style applied to the node.
+ */
 export default class concepto {
 
-	constructor({ file=this.throwIfMissing('file'),config={} }={}) {
+	constructor(file,config={}) {
+		if (arguments.length!=2 || typeof arguments[0] === 'object') throw new Error('fatal error! missing file parameter for parser!');
 		let console_ = require('open_console'), me=this;
 		let def_config = {
 			class:'concepto',
@@ -19,8 +31,7 @@ export default class concepto {
 		this.x_console = new console_({ silent:!this.x_config.console });
 		this.x_console.setPrefix({ prefix:this.x_config.class, color:'yellow' });
 		this.x_flags = { init_ok:false, dsl:file, watchdog:{ start:new Date(), end:new Date() } };
-		this.x_commands=this.commands();
-		//if (this.x_config.extend) this.addCommands(this.x_config.extend);
+		this.x_commands={}; 	//this.commands();
 		this.x_time_stats={};
 		// grab class methods that start with the 'on' prefix
 		/* @TODO check if this is useful or needed 1-Aug-2020
@@ -36,7 +47,9 @@ export default class concepto {
 		console.log('x_on_methods says',this.x_on_methods);*/
 	}
 
-	// to be called by user, after using new class()
+	/**
+	* Initializes/starts the class 
+	*/
 	async init() {
 		if (!this.x_flags.init_ok) {
 			let dsl_parser = require('dsl_parser'), path = require('path'), fs = require('fs').promises, tmp = {};
@@ -100,23 +113,39 @@ export default class concepto {
 	// template methods (to be extended)
 	// **********************************
 
-	//defines default reply for command's functions
+	/**
+	* Sets the default reply Object for commands
+	* @param 	{Object}	[init]				- Merges given object keys with default defined template
+	* @return 	{Object}
+	*/
 	reply_template(init={}) {
 		let resp = { init:'', open:'', close:'', hasChildren:true, type:'simple', valid:true, _meta:{ _set:{}, cache:true } };
 		return {...resp,...init};
 	}
 
-	//Called after init method finishes
+	/**
+	* Gets automatically executed after init method finishes.
+	* You should place any parser preparation steps here (ex. load commands)
+	*/
 	async onInit() {
 		console.log('hello from concepto.js')
 	}
 
-	//Called after parsing nodes
+	/**
+	* Gets automatically executed after parsing all nodes of the given dsl (before onCompleteCodeTemplate)
+	* @param 	{Array}		processedNodes		- reply content of writer method
+	* @return 	{Node[]}
+	*/
+	//@TODO rename to onAfterWriter later 4-ago-20
 	async onAfterWritten(processedNodes) {
 		return processedNodes;
 	}
 
-	//Called for defining the title of class/page by testing node.
+	/**
+	* Gets automatically executed within writer method for setting obtaining the title for a node level 2.
+	* @param 	{Object}		node		- node to process
+	* @return 	{String}
+	*/
 	async onDefineTitle(node) {
 		let resp = node.text, i;
 		for (i in node.attributes) {
@@ -128,12 +157,16 @@ export default class concepto {
 		return resp;
 	}
 
-	//Called for naming filename of class/page by testing node.
+	/**
+	* Gets automatically executed for naming filename of class/page by testing node (you could use a slud method here).
+	* @param 	{Object}		node		- node to process
+	* @return 	{String}
+	*/
 	async onDefineFilename(node) {
 		return node.text;
 	}
 
-	//Called for naming the class/page by testing node.
+	//Called for naming the class/page by testing node (similar to a filename, but for objects reference).
 	async onDefineNodeName(node) {
 		return node.text.replace(' ','_');
 	}
@@ -158,9 +191,9 @@ export default class concepto {
 	// ********************
 	// private methods
 	// ********************
-	commands() {
+	/*commands() {
 		return {};
-	}
+	}*/
 
 	async addCommands(command_func) {
 		if (command_func && typeof command_func === 'function') { 
@@ -325,7 +358,8 @@ export default class concepto {
 			if (command_requires['x_or_hasparent']!='' && allTrue(matched,keys)) {
 				// @TODO need to create hasParentID method
 				matched.x_or_hasparent=false;
-				if (this.hasParentID(node.x_id,command_requires['x_or_hasparent'])) {
+				let test = await this.hasParentID(node.x_id,command_requires['x_or_hasparent']);
+				if (test) {
 					matched.x_or_hasparent=true;
 				}
 			}
@@ -335,7 +369,8 @@ export default class concepto {
 			if (command_requires['x_all_hasparent']!='' && allTrue(matched,keys)) {
 				// @TODO need to create hasParentID method
 				for (let key of command_requires['x_all_hasparent'].split(',')) {
-					if (!this.hasParentID(node.x_id,key)) {
+					let test = await this.hasParentID(node.x_id,key);
+					if (!test) {
 						matched.x_all_hasparent=false;
 						break;
 					}
@@ -348,7 +383,8 @@ export default class concepto {
 				// @TODO need to create isExactParentID method
 				matched.x_or_isparent=false;
 				for (let key of command_requires['x_or_isparent'].split(',')) {
-					if (!this.isExactParentID(node.x_id,key)) {
+					let test = await this.isExactParentID(node.x_id,key);
+					if (!test) {
 						matched.x_or_isparent=true;
 						break;
 					}	
@@ -400,12 +436,13 @@ export default class concepto {
 		return resp;
 	}
 
-	async findCommandValid4Eval(node=this.throwIfMissing('node'),object=false) {
-		this.debug({ message:'findCommandValid4Eval called for node '+node.id, color:'yellow' });
+	//findValidCommand
+	async findValidCommand(node=this.throwIfMissing('node'),object=false) {
+		this.debug({ message:'findValidCommand called for node '+node.id, color:'yellow' });
 		let commands_ = await this.findCommand(node,false), reply={};
 		// @TODO debug and test
 		if (commands_.length==0) {
-			this.debug({ message:'findCommandValid4Eval: no command found.', color:'red' });
+			this.debug({ message:'findValidCommand: no command found.', color:'red' });
 		} else if (commands_.length==1) {
 			reply = commands_[1];
 			// try executing the node on the found commands_
@@ -414,21 +451,21 @@ export default class concepto {
 				reply.exec = test;
 				// @TODO test if _f4e is used; because its ugly
 				reply._f4e = commands_[1].x_id;
-				this.debug({ message:`findCommandValid4Eval: 1/1 applying command ${commands_[1].x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
+				this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[1].x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
 			} catch(test_err) {
-				this.debug({ message:`findCommandValid4Eval: 1/1 applying command ${commands_[1].x_id} ... ERROR! (nodeid:${node.id})`, color:'red' });
-				// @TODO emit('internal_error','findCommandValid4Eval')
+				this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[1].x_id} ... ERROR! (nodeid:${node.id})`, color:'red' });
+				// @TODO emit('internal_error','findValidCommand')
 			}
 		} else {
 			// more than one command found
-			this.debug({ message:`findCommandValid4Eval: ${commands_.length} commands found: (nodeid:${node.id})`, color:'green' });
+			this.debug({ message:`findValidCommand: ${commands_.length} commands found: (nodeid:${node.id})`, color:'green' });
 			// test each command
 			for (let qm_index in commands_) {
 				let qm = commands_[qm_index];
 				try {
 					let test = await this.x_commands[qm.x_id].func(node);
 					if (test.valid) {
-						this.debug({ message:`findCommandValid4Eval: ${parseInt(qm_index)+1}/${commands_.length} testing command ${qm.x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
+						this.debug({ message:`findValidCommand: ${parseInt(qm_index)+1}/${commands_.length} testing command ${qm.x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
 						this.debug({ message:'---------------------', time:false });
 						if (object) {
 							reply=test;
@@ -441,7 +478,7 @@ export default class concepto {
 						break;
 					}
 				} catch(test_err1) {
-					this.debug({ message:`findCommandValid4Eval: error executing command ${qm} (nodeid:${node.id})`, data:test_err1, color:'red' });
+					this.debug({ message:`findValidCommand: error executing command ${qm} (nodeid:${node.id})`, data:test_err1, color:'red' });
 				}
 			}
 		}
@@ -504,13 +541,13 @@ export default class concepto {
 	}
 
 	// true if given node it has a brother of given x_id (command)
-	hasBrotherID(id=this.throwIfMissing('id'),x_id=this.throwIfMissing('x_id')) {
+	async hasBrotherID(id=this.throwIfMissing('id'),x_id=this.throwIfMissing('x_id')) {
 		// @TODO test it after having 'real' commands on some parser 3-ago-20
-		let brother_ids = this.dsl_parser.getBrotherNodesIDs({ id, before:true, after:true }).split(',');
+		let brother_ids = await this.dsl_parser.getBrotherNodesIDs({ id, before:true, after:true }).split(',');
 		let brother_x_ids = [], resp=false;
 		for (let q of brother_ids) {
-			let node = this.dsl_parser.getNode({ id:q, recurse:false });
-			let command = findCommandValid4Eval(node);
+			let node = await this.dsl_parser.getNode({ id:q, recurse:false });
+			let command = await findValidCommand(node);
 			if (brother_x_ids.includes(x_id)) return true;
 			brother_x_ids.push(command.x_id);
 		}
@@ -519,45 +556,72 @@ export default class concepto {
 	}
 
 	//true if given node has a brother before it
-	hasBrotherBefore(id=this.throwIfMissing('id')) {
-		let brother_ids = this.dsl_parser.getBrotherNodesIDs({ id:id, before:true, after:false }).split(',');
+	async hasBrotherBefore(id=this.throwIfMissing('id')) {
+		let brother_ids = await this.dsl_parser.getBrotherNodesIDs({ id, before:true, after:false }).split(',');
 		return brother_ids.includes(id);
 	}
 
 	//true if given node has a brother following it
-	hasBrotherNext(id=this.throwIfMissing('id')) {
-		let brother_ids = this.dsl_parser.getBrotherNodesIDs({ id:id, before:false, after:true }).split(',');
+	async hasBrotherNext(id=this.throwIfMissing('id')) {
+		let brother_ids = await this.dsl_parser.getBrotherNodesIDs({ id, before:false, after:true }).split(',');
 		return brother_ids.includes(id);
 	}
 
 	//true if given x_id is exactly the parent of the given node id
-	isExactParentID(id=this.throwIfMissing('id'),x_id=this.throwIfMissing('x_id')) {
-		// @TODO after creating method 'findCommandValid4Eval'
-		return true;
+	async isExactParentID(id=this.throwIfMissing('id'),x_id=this.throwIfMissing('x_id')) {
+		// @TODO test it after having 'real' commands on some parser 4-ago-20
+		let parent_node = await this.dsl_parser.getParentNode({ id });
+		let parent_command = await this.findValidCommand(parent_node);
+		if (parent_command && parent_command.x_id == x_id) {
+			return true;
+		}
+		return false;
 	}
 
-	//true if given x_id is parent (or grandfather) of the given node id
-	hasParentID(id=this.throwIfMissing('id'),x_id=this.throwIfMissing('x_id')) {
-		// @TODO after creating method 'findCommandValid4Eval'
-		return true;
+	//true if given x_id is parent (or ancestor) of the given node id
+	async hasParentID(id=this.throwIfMissing('id'),x_id=this.throwIfMissing('x_id')) {
+		// @TODO test it after having 'real' commands on some parser 4-ago-20
+		let x_ids = x_id.split(',');
+		let parents = await this.dsl_parser.getParentNodesIDs({ id, array:true });
+		for (let parent_id of parents) {
+			let node = await this.dsl_parser.getNode({ parent_id, recurse:false });
+			let command = await this.findValidCommand(node);
+			if (command && x_ids.includes(command.x_id)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
-	//return all x_ids parents of given node id
-	getParentIDs(id=this.throwIfMissing('id')) {
-		// @TODO after creating method 'findCommandValid4Eval'
-		return '';
+	//return all x_ids parents of given node id; if array=true, returns array of objects with x_id and ids.
+	async getParentIDs(id=this.throwIfMissing('id'), array=false) {
+		// @TODO test it after having 'real' commands on some parser 4-ago-20
+		let parents = await this.dsl_parser.getParentNodesIDs({ id, array:true });
+		let resp = [];
+		for (let parent_id of parents) {
+			let node = await this.dsl_parser.getNode({ parent_id, recurse:false });
+			let command = await this.findValidCommand(node);
+			if (command && array) {
+				resp.push({ id:parent_id, x_id:command.x_id });
+			} else {
+				resp.push(command.x_id);
+			}
+		}
+		if (array) return resp;
+		return resp.join(',');
 	}
 
-	//return all x_ids parents of given node id (and their ids)
-	getParentIDs2Array(id=this.throwIfMissing('id')) {
-		// @TODO after creating method 'findCommandValid4Eval' - seems same as getParentIDs but as an array (check it afterwards)
-		return [];
+	//return all x_ids parents of given node id (and their ids; alias for getParentIDs)
+	async getParentIDs2Array(id=this.throwIfMissing('id')) {
+		return await this.getParentIDs(id,true);
 	}
 
 	//return all ids parents of given node id (3-aug-20 PSB doesn't seem to be used anywhere)
-	getParentIDs2ArrayWXID(id=this.throwIfMissing('id')) {
-		// @TODO after creating method 'findCommandValid4Eval'
-		return '';
+	async getParentIDs2ArrayWXID(id=this.throwIfMissing('id')) {
+		// this is only used in ti.cfc: def_textonly (just for back-compatibility in case needed);
+		// @deprecated 4-ago-2020
+		let parents = await this.getParentIDs(id,true);
+		return parents.map(x=>{id:x.id}); // just return ids as an array of objects
 	}
 
 	//converts object keys/values into params for customtags usage
