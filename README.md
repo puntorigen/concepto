@@ -1,5 +1,4 @@
 # Punto Origen OPEN Framework : ES6 Classes
-<sup>Note: you need to pass all arguments as an Object with keys.</sup>
 
 # API Reference
 Concepto DSL Base Class: A base class (to be extended) for defining new languages for Concepto to be compiled to.
@@ -13,9 +12,18 @@ Concepto DSL Base Class: A base class (to be extended) for defining new language
         * [.onAfterWritten(processedNodes)](#module_concepto+onAfterWritten) ⇒ <code>Array.&lt;NodeDSL&gt;</code>
         * [.onDefineTitle(node)](#module_concepto+onDefineTitle) ⇒ <code>String</code>
         * [.onDefineFilename(node)](#module_concepto+onDefineFilename) ⇒ <code>String</code>
+        * [.onDefineNodeName(node)](#module_concepto+onDefineNodeName) ⇒ <code>String</code>
+        * [.onCompleteCodeTemplate(processedNodes)](#module_concepto+onCompleteCodeTemplate) ⇒ <code>Array.&lt;NodeDSL&gt;</code>
+        * [.onPrepare()](#module_concepto+onPrepare)
+        * [.onErrors(errors)](#module_concepto+onErrors)
+        * [.onCreateFiles(processedNodes)](#module_concepto+onCreateFiles)
+        * [.addCommands(command_func)](#module_concepto+addCommands)
+        * [.findCommand(node, [justone])](#module_concepto+findCommand) ⇒ <code>Command</code> \| <code>Array.&lt;Command&gt;</code>
+        * [.findValidCommand(node, [object])](#module_concepto+findValidCommand) ⇒ <code>Command</code> \| <code>boolean</code>
     * _inner_
         * [~NodeDSL](#module_concepto..NodeDSL) : <code>Object</code>
         * [~Arrow](#module_concepto..Arrow) : <code>Object</code>
+        * [~Command](#module_concepto..Command) : <code>Object</code>
 
 <a name="module_concepto+init"></a>
 
@@ -55,13 +63,13 @@ Gets automatically executed after parsing all nodes of the given dsl (before onC
 <a name="module_concepto+onDefineTitle"></a>
 
 ### concepto.onDefineTitle(node) ⇒ <code>String</code>
-Gets automatically executed within writer method for setting obtaining the title for a node level 2.
+Gets automatically executed within writer method for setting the title for a node level 2.
 
 **Kind**: instance method of [<code>concepto</code>](#module_concepto)  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| node | <code>Object</code> | node to process |
+| node | <code>NodeDSL</code> | node to process |
 
 <a name="module_concepto+onDefineFilename"></a>
 
@@ -72,7 +80,94 @@ Gets automatically executed for naming filename of class/page by testing node (y
 
 | Param | Type | Description |
 | --- | --- | --- |
-| node | <code>Object</code> | node to process |
+| node | <code>NodeDSL</code> | node to process |
+
+<a name="module_concepto+onDefineNodeName"></a>
+
+### concepto.onDefineNodeName(node) ⇒ <code>String</code>
+Gets automatically called for naming the class/page by testing node (similar to a filename, but for objects reference).
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| node | <code>NodeDSL</code> | node to process |
+
+<a name="module_concepto+onCompleteCodeTemplate"></a>
+
+### concepto.onCompleteCodeTemplate(processedNodes) ⇒ <code>Array.&lt;NodeDSL&gt;</code>
+Defines template for code given the processedNodes of writer(). Useful to prepend/append code before writting code to disk.
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| processedNodes | <code>Array.&lt;NodeDSL&gt;</code> | array of nodes already processed before writing them to disk |
+
+<a name="module_concepto+onPrepare"></a>
+
+### concepto.onPrepare()
+Defines preparation steps before processing nodes.
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+<a name="module_concepto+onErrors"></a>
+
+### concepto.onErrors(errors)
+Gets automatically called after errors have being found while processing nodes (with the defined commands)
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| errors | <code>Array.&lt;string&gt;</code> | array of errors messages |
+
+<a name="module_concepto+onCreateFiles"></a>
+
+### concepto.onCreateFiles(processedNodes)
+Gets automatically called after all processing on nodes has being done. You usually create the files here using the received processedNodes array.
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| processedNodes | <code>Array.&lt;NodeDSL&gt;</code> | array of nodes already processed ready to be written to disk |
+
+<a name="module_concepto+addCommands"></a>
+
+### concepto.addCommands(command_func)
+Add commands for processing nodes with the current class
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| command_func | <code>function</code> | async function returning an object with commands objects ([Command](Command)) where each key is the command id, and its value a Command object. |
+
+<a name="module_concepto+findCommand"></a>
+
+### concepto.findCommand(node, [justone]) ⇒ <code>Command</code> \| <code>Array.&lt;Command&gt;</code>
+Finds one or more commands defined that matches the specs of the given node.
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| node | <code>NodeDSL</code> |  | node for which to find commands that match |
+| [justone] | <code>boolean</code> | <code>true</code> | indicates if you want just the first match (true), or all commands that match the given node (false) |
+
+<a name="module_concepto+findValidCommand"></a>
+
+### concepto.findValidCommand(node, [object]) ⇒ <code>Command</code> \| <code>boolean</code>
+Finds the valid/best command match for the given node.
+Also tests the command for its 'valid' attribute, in case the command func specified aditional conditions.
+If no command is found, returns false.
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| node | <code>NodeDSL</code> |  | node for which to find the command |
+| [object] | <code>boolean</code> | <code>false</code> | if false returns the command reference, true returns the command execution answer |
 
 <a name="module_concepto..NodeDSL"></a>
 
@@ -93,7 +188,7 @@ A node object representation of a DSL node.
 | cloud | <code>Object</code> | Cloud information of the node. |
 | cloud.bgcolor | <code>string</code> | Background color of cloud. |
 | cloud.used | <code>boolean</code> | True if cloud is used, false otherwise. |
-| arrows | <code>Array.&lt;Arrow&gt;</code> | Visual connections of this node with other nodes [Arrow](Arrow). |
+| arrows | <code>Array.&lt;Arrow&gt;</code> | Visual connections of this node with other nodes [#module_concepto..Arrow](#module_concepto..Arrow). |
 | nodes | <code>Array.&lt;NodeDSL&gt;</code> | Children nodes of current node. |
 | font | <code>Object</code> | Define font, size and styles of node texts. |
 | font.face | <code>Object</code> | Font face type used on node. |
@@ -123,6 +218,31 @@ Arrow object definition, for connections to other nodes within a DSL.
 | target | <code>string</code> | Target node ID of connection. |
 | color | <code>string</code> | Color of visual connection. |
 | style | <code>string</code> | Graphical representation type of link (source-to-target, target-to-source, both-ways). |
+
+<a name="module_concepto..Command"></a>
+
+### concepto~Command : <code>Object</code>
+A command object specifying requirements for a node to execute its function.
+
+**Kind**: inner typedef of [<code>concepto</code>](#module_concepto)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| [x_icons] | <code>string</code> | List of required icons that the node must define to be a match for this command. |
+| [x_not_icons] | <code>string</code> | List of icons that the node cannot define to be a match for this command. |
+| [x_not_empty] | <code>string</code> | List of keys that must not be empty to be a match for this command (can be any key from a NodeDSL object). Example: 'attribute[src],color' |
+| [x_not_text_contains] | <code>string</code> | List of strings, which cannot be within the node text. |
+| [x_empty] | <code>string</code> | List of NodeDSL keys that must be empty to be a match for this command. |
+| [x_text_contains] | <code>string</code> | List of strings, that can be contain in node text (if delimiter is comma) or that must be all contained within the node text (if delimiter is |). |
+| [x_level] | <code>string</code> | Numeric conditions that the level of the node must met (example: '>2,<5' or '2,3,4'). |
+| [x_all_hasparent] | <code>string</code> | List of commands ids (keys), which must be ancestors of the node to be a match for this command. |
+| [x_or_hasparent] | <code>string</code> | List of commands ids (keys), which at least one must be an ancestor of the node to be a match for this command. |
+| [x_or_isparent] | <code>string</code> | List of commands ids (keys), which at least one must be the exact parent of the node to be a match for this command. |
+| [autocomplete] | <code>Object</code> | Describes the node for the autocomplete feature of Concepto DSL software and its related documentation. The feature also takes into account the definition of the command (x_level and x_icons) |
+| [autocomplete.key_text] | <code>string</code> | String that the node text must have for this command to be suggested. |
+| [autocomplete.hint] | <code>string</code> | Text description for this command to be shown on Concepto DSL. |
+| func | <code>function</code> | Function to execute with a matching node. Accepts one argument and it must be a node. |
 
 
 * * *

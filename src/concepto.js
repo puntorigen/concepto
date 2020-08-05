@@ -16,7 +16,7 @@
  * @property {Object} cloud - Cloud information of the node.
  * @property {string} cloud.bgcolor - Background color of cloud.
  * @property {boolean} cloud.used - True if cloud is used, false otherwise. 
- * @property {Arrow[]} arrows - Visual connections of this node with other nodes {@link Arrow}.
+ * @property {Arrow[]} arrows - Visual connections of this node with other nodes {@link #module_concepto..Arrow}.
  * @property {NodeDSL[]} nodes - Children nodes of current node.
  * @property {Object} font - Define font, size and styles of node texts.
  * @property {Object} font.face - Font face type used on node.
@@ -163,14 +163,14 @@ export default class concepto {
 	* @param 	{Array}		processedNodes		- reply content of writer method
 	* @return 	{NodeDSL[]}
 	*/
-	//@TODO rename to onAfterWriter later 4-ago-20
+	//@TODO rename to onAfterWriter (or onAfterProcess) later 4-ago-20
 	async onAfterWritten(processedNodes) {
 		return processedNodes;
 	}
 
 	/**
-	* Gets automatically executed within writer method for setting obtaining the title for a node level 2.
-	* @param 	{Object}		node		- node to process
+	* Gets automatically executed within writer method for setting the title for a node level 2.
+	* @param 	{NodeDSL}		node		- node to process
 	* @return 	{String}
 	*/
 	async onDefineTitle(node) {
@@ -186,41 +186,78 @@ export default class concepto {
 
 	/**
 	* Gets automatically executed for naming filename of class/page by testing node (you could use a slud method here).
-	* @param 	{Object}		node		- node to process
+	* @param 	{NodeDSL}		node		- node to process
 	* @return 	{String}
 	*/
 	async onDefineFilename(node) {
 		return node.text;
 	}
 
-	//Called for naming the class/page by testing node (similar to a filename, but for objects reference).
+	/**
+	* Gets automatically called for naming the class/page by testing node (similar to a filename, but for objects reference).
+	* @param 	{NodeDSL}		node		- node to process
+	* @return 	{String}
+	*/
 	async onDefineNodeName(node) {
 		return node.text.replace(' ','_');
 	}
 
-	//Defines template for code given the processedNodes of writer()
+	/**
+	* Defines template for code given the processedNodes of writer(). Useful to prepend/append code before writting code to disk.
+	* @param 	{NodeDSL[]}		processedNodes		- array of nodes already processed before writing them to disk
+	* @return 	{NodeDSL[]}
+	*/
 	async onCompleteCodeTemplate(processedNodes) {
 		return processedNodes;
 	}
 
-	//Defines preparation steps before processing nodes.
+	/**
+	* Defines preparation steps before processing nodes.
+	*/
 	async onPrepare() {
 	}
 
-	//Executed when compiler founds an error processing nodes.
+	/**
+	* Gets automatically called after errors have being found while processing nodes (with the defined commands)
+	* @param 	{string[]}		errors		- array of errors messages
+	*/
 	async onErrors(errors) {
 	}
 
-	//Transforms the processed nodes into files.
+	/**
+	* Gets automatically called after all processing on nodes has being done. You usually create the files here using the received processedNodes array.
+	* @param 	{NodeDSL[]}		processedNodes		- array of nodes already processed ready to be written to disk
+	*/
 	async onCreateFiles(processedNodes) {
 	}
 
 	// ********************
-	// private methods
+	// helper methods
 	// ********************
-	/*commands() {
-		return {};
-	}*/
+
+	/**
+	* A command object specifying requirements for a node to execute its function.
+	* @typedef {Object} Command
+	* @property {string} [x_icons] 				- List of required icons that the node must define to be a match for this command.
+	* @property {string} [x_not_icons] 			- List of icons that the node cannot define to be a match for this command.
+	* @property {string} [x_not_empty] 			- List of keys that must not be empty to be a match for this command (can be any key from a NodeDSL object). Example: 'attribute[src],color'
+	* @property {string} [x_not_text_contains] 	- List of strings, which cannot be within the node text.
+	* @property {string} [x_empty] 				- List of NodeDSL keys that must be empty to be a match for this command.
+	* @property {string} [x_text_contains]		- List of strings, that can be contain in node text (if delimiter is comma) or that must be all contained within the node text (if delimiter is |).
+	* @property {string} [x_level] 				- Numeric conditions that the level of the node must met (example: '>2,<5' or '2,3,4').
+	* @property {string} [x_all_hasparent] 		- List of commands ids (keys), which must be ancestors of the node to be a match for this command.
+	* @property {string} [x_or_hasparent] 		- List of commands ids (keys), which at least one must be an ancestor of the node to be a match for this command.
+	* @property {string} [x_or_isparent] 		- List of commands ids (keys), which at least one must be the exact parent of the node to be a match for this command.
+	* @property {Object} [autocomplete] 			- Describes the node for the autocomplete feature of Concepto DSL software and its related documentation. The feature also takes into account the definition of the command (x_level and x_icons)
+	* @property {string} [autocomplete.key_text] 	- String that the node text must have for this command to be suggested.
+	* @property {string} [autocomplete.hint] 		- Text description for this command to be shown on Concepto DSL.
+	* @property {Function} func - Function to execute with a matching node. Accepts one argument and it must be a node.
+	*/
+
+	/**
+	* Add commands for processing nodes with the current class
+	* @param 	{Function}		command_func		- async function returning an object with commands objects ({@link Command}) where each key is the command id, and its value a Command object.
+	*/
 
 	async addCommands(command_func) {
 		if (command_func && typeof command_func === 'function') { 
@@ -235,7 +272,12 @@ export default class concepto {
 		}
 	}
 
-	//returns an Object or an Array of Objects (type commands)
+	/**
+	* Finds one or more commands defined that matches the specs of the given node.
+	* @param 	{NodeDSL}		node			- node for which to find commands that match
+	* @param 	{boolean}		[justone=true]	- indicates if you want just the first match (true), or all commands that match the given node (false)
+	* @return 	{Command|Command[]}
+	*/
 	async findCommand(node=this.throwIfMissing('node'),justone=true) {
 		let resp = {...this.reply_template(),...{ id:'not_found', hint:'failover command'}}, xtest = [];
 		let keys = 'x_icons,x_not_icons,x_not_empty,x_not_text_contains,x_empty,x_text_starts,x_text_contains,x_level,x_or_hasparent,x_all_hasparent,x_or_isparent';
@@ -463,7 +505,16 @@ export default class concepto {
 		return resp;
 	}
 
-	//findValidCommand
+	/**
+	* Finds the valid/best command match for the given node.
+	* Also tests the command for its 'valid' attribute, in case the command func specified aditional conditions.
+	* If no command is found, returns false.
+	*
+	* @param 	{NodeDSL}		node			- node for which to find the command
+	* @param 	{boolean}		[object=false]	- if false returns the command reference, true returns the command execution answer
+	* @return 	{Command|boolean}
+	*/
+
 	async findValidCommand(node=this.throwIfMissing('node'),object=false) {
 		this.debug({ message:'findValidCommand called for node '+node.id, color:'yellow' });
 		let commands_ = await this.findCommand(node,false), reply={};

@@ -17,7 +17,6 @@ export default async function(context) {
 		x_not_empty: 'attribute[name]',
 		x_not_text_contains: '',
 		x_empty: '',
-		x_text_starts: '',
 		x_text_contains: '',
 		x_level: '2,>2,<5,..',
 		x_all_hasparent: 'def_padre_otro',
