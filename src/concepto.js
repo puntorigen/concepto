@@ -6,14 +6,41 @@
 
 /**
  * A node object representation of a DSL node.
- * @typedef {Object} Node
+ * @typedef {Object} NodeDSL
+ * @property {number} id - Node unique ID.
  * @property {number} level - Indicates the depth level from the center of the dsl map.
  * @property {string} text - Indicates the text defined in the node itself.
  * @property {string} text_rich - Indicates the html defined in the node itself.
  * @property {string} text_note - Indicates the text/html defined in the notes view of the node (if any).
  * @property {string} image - Image link defined as an image within the node.
+ * @property {Object} cloud - Cloud information of the node.
+ * @property {string} cloud.bgcolor - Background color of cloud.
+ * @property {boolean} cloud.used - True if cloud is used, false otherwise. 
+ * @property {Arrow[]} arrows - Visual connections of this node with other nodes {@link Arrow}.
+ * @property {NodeDSL[]} nodes - Children nodes of current node.
+ * @property {Object} font - Define font, size and styles of node texts.
+ * @property {Object} font.face - Font face type used on node.
+ * @property {Object} font.size - Font size used on node.
+ * @property {Object} font.bold - True if node text is in bold.
+ * @property {Object} font.italic - True if node text is in italics.
  * @property {string} style - Style applied to the node.
+ * @property {string} color - Text color of node.
+ * @property {string} bgcolor - Background color of node.
+ * @property {string} link - Link defined on node.
+ * @property {string} position - Position in relation of central node (left,right).
+ * @property {Object[]} attributes - Array of objects with each attribute (key is attribute name, value is attribute value).
+ * @property {string[]} icons - Array with icon names used in the node.
+ * @property {date} date_modified - Date of node when it was last modified.
+ * @property {date} date_created - Date of node when it was created.
  */
+
+/**
+ * Arrow object definition, for connections to other nodes within a DSL.
+ * @typedef {Object} Arrow
+ * @property {string} target - Target node ID of connection.
+ * @property {string} color - Color of visual connection.
+ * @property {string} style - Graphical representation type of link (source-to-target, target-to-source, both-ways). 
+*/
 export default class concepto {
 
 	constructor(file,config={}) {
@@ -134,7 +161,7 @@ export default class concepto {
 	/**
 	* Gets automatically executed after parsing all nodes of the given dsl (before onCompleteCodeTemplate)
 	* @param 	{Array}		processedNodes		- reply content of writer method
-	* @return 	{Node[]}
+	* @return 	{NodeDSL[]}
 	*/
 	//@TODO rename to onAfterWriter later 4-ago-20
 	async onAfterWritten(processedNodes) {

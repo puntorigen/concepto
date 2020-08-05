@@ -10,11 +10,12 @@ Concepto DSL Base Class: A base class (to be extended) for defining new language
         * [.init()](#module_concepto+init)
         * [.reply_template([init])](#module_concepto+reply_template) ⇒ <code>Object</code>
         * [.onInit()](#module_concepto+onInit)
-        * [.onAfterWritten(processedNodes)](#module_concepto+onAfterWritten) ⇒ <code>Array.&lt;Node&gt;</code>
+        * [.onAfterWritten(processedNodes)](#module_concepto+onAfterWritten) ⇒ <code>Array.&lt;NodeDSL&gt;</code>
         * [.onDefineTitle(node)](#module_concepto+onDefineTitle) ⇒ <code>String</code>
         * [.onDefineFilename(node)](#module_concepto+onDefineFilename) ⇒ <code>String</code>
     * _inner_
-        * [~Node](#module_concepto..Node) : <code>Object</code>
+        * [~NodeDSL](#module_concepto..NodeDSL) : <code>Object</code>
+        * [~Arrow](#module_concepto..Arrow) : <code>Object</code>
 
 <a name="module_concepto+init"></a>
 
@@ -42,7 +43,7 @@ You should place any parser preparation steps here (ex. load commands)
 **Kind**: instance method of [<code>concepto</code>](#module_concepto)  
 <a name="module_concepto+onAfterWritten"></a>
 
-### concepto.onAfterWritten(processedNodes) ⇒ <code>Array.&lt;Node&gt;</code>
+### concepto.onAfterWritten(processedNodes) ⇒ <code>Array.&lt;NodeDSL&gt;</code>
 Gets automatically executed after parsing all nodes of the given dsl (before onCompleteCodeTemplate)
 
 **Kind**: instance method of [<code>concepto</code>](#module_concepto)  
@@ -73,9 +74,9 @@ Gets automatically executed for naming filename of class/page by testing node (y
 | --- | --- | --- |
 | node | <code>Object</code> | node to process |
 
-<a name="module_concepto..Node"></a>
+<a name="module_concepto..NodeDSL"></a>
 
-### concepto~Node : <code>Object</code>
+### concepto~NodeDSL : <code>Object</code>
 A node object representation of a DSL node.
 
 **Kind**: inner typedef of [<code>concepto</code>](#module_concepto)  
@@ -83,12 +84,45 @@ A node object representation of a DSL node.
 
 | Name | Type | Description |
 | --- | --- | --- |
+| id | <code>number</code> | Node unique ID. |
 | level | <code>number</code> | Indicates the depth level from the center of the dsl map. |
 | text | <code>string</code> | Indicates the text defined in the node itself. |
 | text_rich | <code>string</code> | Indicates the html defined in the node itself. |
 | text_note | <code>string</code> | Indicates the text/html defined in the notes view of the node (if any). |
 | image | <code>string</code> | Image link defined as an image within the node. |
+| cloud | <code>Object</code> | Cloud information of the node. |
+| cloud.bgcolor | <code>string</code> | Background color of cloud. |
+| cloud.used | <code>boolean</code> | True if cloud is used, false otherwise. |
+| arrows | <code>Array.&lt;Arrow&gt;</code> | Visual connections of this node with other nodes [Arrow](Arrow). |
+| nodes | <code>Array.&lt;NodeDSL&gt;</code> | Children nodes of current node. |
+| font | <code>Object</code> | Define font, size and styles of node texts. |
+| font.face | <code>Object</code> | Font face type used on node. |
+| font.size | <code>Object</code> | Font size used on node. |
+| font.bold | <code>Object</code> | True if node text is in bold. |
+| font.italic | <code>Object</code> | True if node text is in italics. |
 | style | <code>string</code> | Style applied to the node. |
+| color | <code>string</code> | Text color of node. |
+| bgcolor | <code>string</code> | Background color of node. |
+| link | <code>string</code> | Link defined on node. |
+| position | <code>string</code> | Position in relation of central node (left,right). |
+| attributes | <code>Array.&lt;Object&gt;</code> | Array of objects with each attribute (key is attribute name, value is attribute value). |
+| icons | <code>Array.&lt;string&gt;</code> | Array with icon names used in the node. |
+| date_modified | <code>date</code> | Date of node when it was last modified. |
+| date_created | <code>date</code> | Date of node when it was created. |
+
+<a name="module_concepto..Arrow"></a>
+
+### concepto~Arrow : <code>Object</code>
+Arrow object definition, for connections to other nodes within a DSL.
+
+**Kind**: inner typedef of [<code>concepto</code>](#module_concepto)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| target | <code>string</code> | Target node ID of connection. |
+| color | <code>string</code> | Color of visual connection. |
+| style | <code>string</code> | Graphical representation type of link (source-to-target, target-to-source, both-ways). |
 
 
 * * *
