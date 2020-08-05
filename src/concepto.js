@@ -76,6 +76,7 @@ export default class concepto {
 
 	/**
 	* Initializes/starts the class 
+	* @async
 	*/
 	async init() {
 		if (!this.x_flags.init_ok) {
@@ -153,6 +154,7 @@ export default class concepto {
 	/**
 	* Gets automatically executed after init method finishes.
 	* You should place any parser preparation steps here (ex. load commands)
+	* @async
 	*/
 	async onInit() {
 		console.log('hello from concepto.js')
@@ -160,6 +162,7 @@ export default class concepto {
 
 	/**
 	* Gets automatically executed after parsing all nodes of the given dsl (before onCompleteCodeTemplate)
+	* @async
 	* @param 	{Array}		processedNodes		- reply content of writer method
 	* @return 	{NodeDSL[]}
 	*/
@@ -170,6 +173,7 @@ export default class concepto {
 
 	/**
 	* Gets automatically executed within writer method for setting the title for a node level 2.
+	* @async
 	* @param 	{NodeDSL}		node		- node to process
 	* @return 	{String}
 	*/
@@ -186,6 +190,7 @@ export default class concepto {
 
 	/**
 	* Gets automatically executed for naming filename of class/page by testing node (you could use a slud method here).
+	* @async
 	* @param 	{NodeDSL}		node		- node to process
 	* @return 	{String}
 	*/
@@ -195,6 +200,7 @@ export default class concepto {
 
 	/**
 	* Gets automatically called for naming the class/page by testing node (similar to a filename, but for objects reference).
+	* @async
 	* @param 	{NodeDSL}		node		- node to process
 	* @return 	{String}
 	*/
@@ -204,6 +210,7 @@ export default class concepto {
 
 	/**
 	* Defines template for code given the processedNodes of writer(). Useful to prepend/append code before writting code to disk.
+	* @async
 	* @param 	{NodeDSL[]}		processedNodes		- array of nodes already processed before writing them to disk
 	* @return 	{NodeDSL[]}
 	*/
@@ -213,12 +220,14 @@ export default class concepto {
 
 	/**
 	* Defines preparation steps before processing nodes.
+	* @async
 	*/
 	async onPrepare() {
 	}
 
 	/**
 	* Gets automatically called after errors have being found while processing nodes (with the defined commands)
+	* @async
 	* @param 	{string[]}		errors		- array of errors messages
 	*/
 	async onErrors(errors) {
@@ -226,6 +235,7 @@ export default class concepto {
 
 	/**
 	* Gets automatically called after all processing on nodes has being done. You usually create the files here using the received processedNodes array.
+	* @async
 	* @param 	{NodeDSL[]}		processedNodes		- array of nodes already processed ready to be written to disk
 	*/
 	async onCreateFiles(processedNodes) {
@@ -251,11 +261,12 @@ export default class concepto {
 	* @property {Object} [autocomplete] 			- Describes the node for the autocomplete feature of Concepto DSL software and its related documentation. The feature also takes into account the definition of the command (x_level and x_icons)
 	* @property {string} [autocomplete.key_text] 	- String that the node text must have for this command to be suggested.
 	* @property {string} [autocomplete.hint] 		- Text description for this command to be shown on Concepto DSL.
-	* @property {Function} func - Function to execute with a matching node. Accepts one argument and it must be a node.
+	* @property {Function} func - Function to execute with a matching node. Receives one argument and it must be a NodeDSL object.
 	*/
 
 	/**
 	* Add commands for processing nodes with the current class
+	* @async
 	* @param 	{Function}		command_func		- async function returning an object with commands objects ({@link Command}) where each key is the command id, and its value a Command object.
 	*/
 
@@ -274,6 +285,7 @@ export default class concepto {
 
 	/**
 	* Finds one or more commands defined that matches the specs of the given node.
+	* @async
 	* @param 	{NodeDSL}		node			- node for which to find commands that match
 	* @param 	{boolean}		[justone=true]	- indicates if you want just the first match (true), or all commands that match the given node (false)
 	* @return 	{Command|Command[]}
@@ -510,6 +522,7 @@ export default class concepto {
 	* Also tests the command for its 'valid' attribute, in case the command func specified aditional conditions.
 	* If no command is found, returns false.
 	*
+	* @async
 	* @param 	{NodeDSL}		node			- node for which to find the command
 	* @param 	{boolean}		[object=false]	- if false returns the command reference, true returns the command execution answer
 	* @return 	{Command|boolean}
@@ -577,23 +590,54 @@ export default class concepto {
         throw new Error('Missing '+name+' parameter!');
     }
 
-    //set theory group
+    /**
+	* Helper method for obtaining the common values (which can be anything) between two arrays.
+	* @param 	{string[]|Object[]|boolean[]}		arr1	- first array
+	* @param 	{string[]|Object[]|boolean[]}		arr2	- second array
+	* @return 	{string[]|Object[]|boolean[]}
+	*/
     array_intersect(arr1,arr2) {
     	return arr1.filter(x => arr2.includes(x));
     }
+
+    /**
+	* Helper method for obtaining the first array items minus the second array items (which can be anything).
+	* @param 	{string[]|Object[]|boolean[]}		arr1	- first array from which to substract
+	* @param 	{string[]|Object[]|boolean[]}		arr2	- second array with items to substract from arr1
+	* @return 	{string[]|Object[]|boolean[]}
+	*/
     array_substract(arr1,arr2) {
     	return arr1.filter(x => !arr2.includes(x));
     }
+
+    /**
+	* Helper method for obtaining the unique values (which can be anything) between two arrays.
+	* @param 	{string[]|Object[]|boolean[]}		arr1	- first array
+	* @param 	{string[]|Object[]|boolean[]}		arr2	- second array
+	* @return 	{string[]|Object[]|boolean[]}
+	*/
     array_difference(arr1,arr2) {
     	return arr1
                  .filter(x => !arr2.includes(x))
                  .concat(arr2.filter(x => !arr1.includes(x)));
     }
+
+    /**
+	* Helper method for joining the values (which can be anything) between two arrays.
+	* @param 	{string[]|Object[]|boolean[]}		arr1	- first array
+	* @param 	{string[]|Object[]|boolean[]}		arr2	- second array
+	* @return 	{string[]|Object[]|boolean[]}
+	*/
     array_union(arr1,arr2) {
     	return [...arr1, ...arr2];
     }
 
     // public helpers
+    /**
+	* Helper method for defining how to display (or do with them; if you overload it) debug messages.
+	* @param 	{string|Object}		message		- message to display. It can also be an Object of open-console params.
+	* @param 	{*}					[data]		- data variable to show with message
+	*/
     debug(message,data) {
     	let params={};
     	if (arguments.length==1 && typeof arguments[0] === 'object') {
@@ -607,18 +651,34 @@ export default class concepto {
 			this.x_console.out({...{ prefix:'debug,dim', color:'dim' },...params});
 		}
 	}
+
+	/**
+	* Helper method for measuring (start) time in ms from this method until debug_timeEnd() method and show it in the console.
+	* @param 	{string}		id		- id key (which can also have spaces and/or symbols) with a unique id to identify the stopwatch.
+	*/
 	debug_time() {
 		if (this.x_config.debug && arguments.length>0) {
 			this.x_console.time(arguments[0]);
 		}
 	}
+
+	/**
+	* Helper method for measuring (end) time in ms from the call of debug_time() method.
+	* @param 	{string}		id		- id key used in the call for debug_time() method.
+	*/
 	debug_timeEnd() {
 		if (this.x_config.debug && arguments.length>0) {
 			this.x_console.timeEnd({...{ color:'dim',prefix:'debug,dim' },...arguments[0]});
 		}
 	}
 
-	// true if given node it has a brother of given x_id (command)
+	/**
+	* Helper method to return true if given node id has a brother of given command x_id
+	* @async
+	* @param 	{string}	id		- ID of NodeDSL object to query
+	* @param 	{string}	x_id	- Command object x_id to test for
+	* @return 	{Boolean}
+	*/
 	async hasBrotherID(id=this.throwIfMissing('id'),x_id=this.throwIfMissing('x_id')) {
 		// @TODO test it after having 'real' commands on some parser 3-ago-20
 		let brother_ids = await this.dsl_parser.getBrotherNodesIDs({ id, before:true, after:true }).split(',');
@@ -633,19 +693,35 @@ export default class concepto {
 		return resp;
 	}
 
-	//true if given node has a brother before it
+	/**
+	* Helper method to return true if given node ID has a brother before it
+	* @async
+	* @param 	{string}	id		- ID of NodeDSL object to query
+	* @return 	{Boolean}
+	*/
 	async hasBrotherBefore(id=this.throwIfMissing('id')) {
 		let brother_ids = await this.dsl_parser.getBrotherNodesIDs({ id, before:true, after:false }).split(',');
 		return brother_ids.includes(id);
 	}
 
-	//true if given node has a brother following it
+	/**
+	* Helper method to return true if given node ID has a brother following it
+	* @async
+	* @param 	{string}	id		- ID of NodeDSL object to query
+	* @return 	{Boolean}
+	*/
 	async hasBrotherNext(id=this.throwIfMissing('id')) {
 		let brother_ids = await this.dsl_parser.getBrotherNodesIDs({ id, before:false, after:true }).split(',');
 		return brother_ids.includes(id);
 	}
 
-	//true if given x_id is exactly the parent of the given node id
+	/**
+	* Helper method to return true if given Command object x_id is the exact parent for the given NodeDSL object id
+	* @async
+	* @param 	{string}	id		- ID of NodeDSL object to query
+	* @param 	{string}	x_id	- Command object x_id to test for
+	* @return 	{Boolean}
+	*/
 	async isExactParentID(id=this.throwIfMissing('id'),x_id=this.throwIfMissing('x_id')) {
 		// @TODO test it after having 'real' commands on some parser 4-ago-20
 		let parent_node = await this.dsl_parser.getParentNode({ id });
@@ -656,7 +732,13 @@ export default class concepto {
 		return false;
 	}
 
-	//true if given x_id is parent (or ancestor) of the given node id
+	/**
+	* Helper method to return true if given Command object x_id is the parent or is an ancestor for the given NodeDSL object id
+	* @async
+	* @param 	{string}	id		- ID of NodeDSL object to query
+	* @param 	{string}	x_id	- Command object x_id to test for
+	* @return 	{Boolean}
+	*/
 	async hasParentID(id=this.throwIfMissing('id'),x_id=this.throwIfMissing('x_id')) {
 		// @TODO test it after having 'real' commands on some parser 4-ago-20
 		let x_ids = x_id.split(',');
@@ -671,7 +753,13 @@ export default class concepto {
 		return false;
 	}
 
-	//return all x_ids parents of given node id; if array=true, returns array of objects with x_id and ids.
+	/**
+	* Helper method to return all Command object x_ids parents of given NodeDSL id; if array=true, 
+	* @async
+	* @param 	{string}	id		- ID of NodeDSL object to query
+	* @param 	{Boolean}	array	- If true, returns array of objects with x_id and ids, instead of a list of NodeDSL ids.
+	* @return 	{string|Object[]}
+	*/
 	async getParentIDs(id=this.throwIfMissing('id'), array=false) {
 		// @TODO test it after having 'real' commands on some parser 4-ago-20
 		let parents = await this.dsl_parser.getParentNodesIDs({ id, array:true });
@@ -689,12 +777,24 @@ export default class concepto {
 		return resp.join(',');
 	}
 
-	//return all x_ids parents of given node id (and their ids; alias for getParentIDs)
+	/**
+	* Helper method to return all Command object x_ids parents of given NodeDSL id as an array (its an alias for getParentIDs) 
+	* @async
+	* @param 	{string}	id		- ID of NodeDSL object to query
+	* @return 	{Object[]}
+	*/
 	async getParentIDs2Array(id=this.throwIfMissing('id')) {
 		return await this.getParentIDs(id,true);
 	}
 
-	//return all ids parents of given node id (3-aug-20 PSB doesn't seem to be used anywhere)
+	// 3-aug-20 PSB doesn't seem to be used anywhere)
+	/**
+	* Helper method to return all NodeDSL ids parents of given NodeDSL id 
+	* @async
+	* @param 	{string}	id		- ID of NodeDSL object to query
+	* @return 	{Object[]}
+	* @deprecated
+	*/
 	async getParentIDs2ArrayWXID(id=this.throwIfMissing('id')) {
 		// this is only used in ti.cfc: def_textonly (just for back-compatibility in case needed);
 		// @deprecated 4-ago-2020
@@ -702,7 +802,11 @@ export default class concepto {
 		return parents.map(x=>{id:x.id}); // just return ids as an array of objects
 	}
 
-	//converts object keys/values into params for customtags usage
+	/**
+	* Helper method to transform object keys/values into params for customtags usage
+	* @param 	{Object}	struct		- Object with keys and values to transform from.
+	* @return 	{string}
+	*/
 	struct2params(struct=this.throwIfMissing('id')) {
 		let resp=[];
 		for (let [key, value] of Object.entries(struct)) {

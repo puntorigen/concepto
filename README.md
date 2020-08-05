@@ -20,6 +20,22 @@ Concepto DSL Base Class: A base class (to be extended) for defining new language
         * [.addCommands(command_func)](#module_concepto+addCommands)
         * [.findCommand(node, [justone])](#module_concepto+findCommand) ⇒ <code>Command</code> \| <code>Array.&lt;Command&gt;</code>
         * [.findValidCommand(node, [object])](#module_concepto+findValidCommand) ⇒ <code>Command</code> \| <code>boolean</code>
+        * [.array_intersect(arr1, arr2)](#module_concepto+array_intersect) ⇒ <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code>
+        * [.array_substract(arr1, arr2)](#module_concepto+array_substract) ⇒ <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code>
+        * [.array_difference(arr1, arr2)](#module_concepto+array_difference) ⇒ <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code>
+        * [.array_union(arr1, arr2)](#module_concepto+array_union) ⇒ <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code>
+        * [.debug(message, [data])](#module_concepto+debug)
+        * [.debug_time(id)](#module_concepto+debug_time)
+        * [.debug_timeEnd(id)](#module_concepto+debug_timeEnd)
+        * [.hasBrotherID(id, x_id)](#module_concepto+hasBrotherID) ⇒ <code>Boolean</code>
+        * [.hasBrotherBefore(id)](#module_concepto+hasBrotherBefore) ⇒ <code>Boolean</code>
+        * [.hasBrotherNext(id)](#module_concepto+hasBrotherNext) ⇒ <code>Boolean</code>
+        * [.isExactParentID(id, x_id)](#module_concepto+isExactParentID) ⇒ <code>Boolean</code>
+        * [.hasParentID(id, x_id)](#module_concepto+hasParentID) ⇒ <code>Boolean</code>
+        * [.getParentIDs(id, array)](#module_concepto+getParentIDs) ⇒ <code>string</code> \| <code>Array.&lt;Object&gt;</code>
+        * [.getParentIDs2Array(id)](#module_concepto+getParentIDs2Array) ⇒ <code>Array.&lt;Object&gt;</code>
+        * ~~[.getParentIDs2ArrayWXID(id)](#module_concepto+getParentIDs2ArrayWXID) ⇒ <code>Array.&lt;Object&gt;</code>~~
+        * [.struct2params(struct)](#module_concepto+struct2params) ⇒ <code>string</code>
     * _inner_
         * [~NodeDSL](#module_concepto..NodeDSL) : <code>Object</code>
         * [~Arrow](#module_concepto..Arrow) : <code>Object</code>
@@ -169,6 +185,193 @@ If no command is found, returns false.
 | node | <code>NodeDSL</code> |  | node for which to find the command |
 | [object] | <code>boolean</code> | <code>false</code> | if false returns the command reference, true returns the command execution answer |
 
+<a name="module_concepto+array_intersect"></a>
+
+### concepto.array\_intersect(arr1, arr2) ⇒ <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code>
+Helper method for obtaining the common values (which can be anything) between two arrays.
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| arr1 | <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code> | first array |
+| arr2 | <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code> | second array |
+
+<a name="module_concepto+array_substract"></a>
+
+### concepto.array\_substract(arr1, arr2) ⇒ <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code>
+Helper method for obtaining the first array items minus the second array items (which can be anything).
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| arr1 | <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code> | first array from which to substract |
+| arr2 | <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code> | second array with items to substract from arr1 |
+
+<a name="module_concepto+array_difference"></a>
+
+### concepto.array\_difference(arr1, arr2) ⇒ <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code>
+Helper method for obtaining the unique values (which can be anything) between two arrays.
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| arr1 | <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code> | first array |
+| arr2 | <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code> | second array |
+
+<a name="module_concepto+array_union"></a>
+
+### concepto.array\_union(arr1, arr2) ⇒ <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code>
+Helper method for joining the values (which can be anything) between two arrays.
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| arr1 | <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code> | first array |
+| arr2 | <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code> | second array |
+
+<a name="module_concepto+debug"></a>
+
+### concepto.debug(message, [data])
+Helper method for defining how to display (or do with them; if you overload it) debug messages.
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| message | <code>string</code> \| <code>Object</code> | message to display. It can also be an Object of open-console params. |
+| [data] | <code>\*</code> | data variable to show with message |
+
+<a name="module_concepto+debug_time"></a>
+
+### concepto.debug\_time(id)
+Helper method for measuring (start) time in ms from this method until debug_timeEnd() method and show it in the console.
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| id | <code>string</code> | id key (which can also have spaces and/or symbols) with a unique id to identify the stopwatch. |
+
+<a name="module_concepto+debug_timeEnd"></a>
+
+### concepto.debug\_timeEnd(id)
+Helper method for measuring (end) time in ms from the call of debug_time() method.
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| id | <code>string</code> | id key used in the call for debug_time() method. |
+
+<a name="module_concepto+hasBrotherID"></a>
+
+### concepto.hasBrotherID(id, x_id) ⇒ <code>Boolean</code>
+Helper method to return true if given node id has a brother of given command x_id
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| id | <code>string</code> | ID of NodeDSL object to query |
+| x_id | <code>string</code> | Command object x_id to test for |
+
+<a name="module_concepto+hasBrotherBefore"></a>
+
+### concepto.hasBrotherBefore(id) ⇒ <code>Boolean</code>
+Helper method to return true if given node ID has a brother before it
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| id | <code>string</code> | ID of NodeDSL object to query |
+
+<a name="module_concepto+hasBrotherNext"></a>
+
+### concepto.hasBrotherNext(id) ⇒ <code>Boolean</code>
+Helper method to return true if given node ID has a brother following it
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| id | <code>string</code> | ID of NodeDSL object to query |
+
+<a name="module_concepto+isExactParentID"></a>
+
+### concepto.isExactParentID(id, x_id) ⇒ <code>Boolean</code>
+Helper method to return true if given Command object x_id is the exact parent for the given NodeDSL object id
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| id | <code>string</code> | ID of NodeDSL object to query |
+| x_id | <code>string</code> | Command object x_id to test for |
+
+<a name="module_concepto+hasParentID"></a>
+
+### concepto.hasParentID(id, x_id) ⇒ <code>Boolean</code>
+Helper method to return true if given Command object x_id is the parent or is an ancestor for the given NodeDSL object id
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| id | <code>string</code> | ID of NodeDSL object to query |
+| x_id | <code>string</code> | Command object x_id to test for |
+
+<a name="module_concepto+getParentIDs"></a>
+
+### concepto.getParentIDs(id, array) ⇒ <code>string</code> \| <code>Array.&lt;Object&gt;</code>
+Helper method to return all Command object x_ids parents of given NodeDSL id; if array=true,
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| id | <code>string</code> |  | ID of NodeDSL object to query |
+| array | <code>Boolean</code> | <code>false</code> | If true, returns array of objects with x_id and ids, instead of a list of NodeDSL ids. |
+
+<a name="module_concepto+getParentIDs2Array"></a>
+
+### concepto.getParentIDs2Array(id) ⇒ <code>Array.&lt;Object&gt;</code>
+Helper method to return all Command object x_ids parents of given NodeDSL id as an array (its an alias for getParentIDs)
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| id | <code>string</code> | ID of NodeDSL object to query |
+
+<a name="module_concepto+getParentIDs2ArrayWXID"></a>
+
+### ~~concepto.getParentIDs2ArrayWXID(id) ⇒ <code>Array.&lt;Object&gt;</code>~~
+***Deprecated***
+
+Helper method to return all NodeDSL ids parents of given NodeDSL id
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| id | <code>string</code> | ID of NodeDSL object to query |
+
+<a name="module_concepto+struct2params"></a>
+
+### concepto.struct2params(struct) ⇒ <code>string</code>
+Helper method to transform object keys/values into params for customtags usage
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| struct | <code>Object</code> | Object with keys and values to transform from. |
+
 <a name="module_concepto..NodeDSL"></a>
 
 ### concepto~NodeDSL : <code>Object</code>
@@ -242,7 +445,7 @@ A command object specifying requirements for a node to execute its function.
 | [autocomplete] | <code>Object</code> | Describes the node for the autocomplete feature of Concepto DSL software and its related documentation. The feature also takes into account the definition of the command (x_level and x_icons) |
 | [autocomplete.key_text] | <code>string</code> | String that the node text must have for this command to be suggested. |
 | [autocomplete.hint] | <code>string</code> | Text description for this command to be shown on Concepto DSL. |
-| func | <code>function</code> | Function to execute with a matching node. Accepts one argument and it must be a node. |
+| func | <code>function</code> | Function to execute with a matching node. Receives one argument and it must be a NodeDSL object. |
 
 
 * * *
