@@ -25,26 +25,11 @@ export default class vue extends concepto {
 	//Called after init method finishes
 	async onInit() {
 		this.x_console.outT({ message:`hello from vue`, color:`yellow` });
-		//default commands:
-		await this.addCommands(async function(me) {
-			return {
-				'def_mapa': {
-					x_icons:'idea',
-					func:function(node) {
-						let resp = me.reply_template({ otro:'Pablo' });
-						console.log('text:' + this.x_text + ' node dice Hola!',this);
-						return resp;												
-					}
-				}
-			}
-		});
-		//console.log('hello from vue');
+		// define and assign commands
 		await this.addCommands(internal_commands);
-		//let test=this.x_commands['def_otro'].func({});
-		//console.log('test def internal_commands exec',test);
 		this.debug('x_commands',this.x_commands);
-		//if (this.x_config.debug) this.x_console.out({ message:'x_commands',data:this.x_commands });
-		//console.log('dsl_parser says:',this.dsl_parser);
+		// init vue
+		this.x_state.config_node = await this._readConfig();
 	}
 
 	//Called after parsing nodes
@@ -97,5 +82,47 @@ export default class vue extends concepto {
 	}
 	*/
 
+
+	// **************************
+	// 	Helper Methods
+	// **************************
+
+	/*
+	* Grabs the configuration from node named 'config'
+	*/
+	async _readConfig() {
+		let resp = { id:'', meta:[], seo:{} }, config_node = {};
+		let search = this.dsl_parser.getNodes({ text:'config', level:2, icon:'desktop_new', recurse:true });
+		//
+		if (search.length>0) {
+			config_node = search[0];
+			// define default font_face
+			resp.default_face = config_node.font.face;
+			resp.default_size = config_node.font.size;
+			// apply children nodes as keys/value for resp
+			for (let key of config_node.nodes) {
+				if (key.text.toLowerCase()=='meta') {
+					for (let meta_child of key.nodes) {
+						// apply grand_childs as meta tags
+						if (meta_child.text.toLowerCase()=='keywords') {
+							resp.seo['keywords'] = meta_child.nodes.map(x=>x.text);
+							resp.meta.push({ hid:this.hash(meta_child.nodes[0].text), name:'keywords', content:resp.seo['keywords'].join(',') });
+						} else if (meta_child.text.toLowerCase()=='language') {
+							
+
+						} else if (meta_child.text.toLowerCase()=='charset') {
+							
+						} else {
+
+						}
+						//
+					}			
+				} else {
+					// apply keys as config
+				}
+			}
+		}
+		return resp;
+	}
 }
 

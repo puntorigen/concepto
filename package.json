@@ -38,6 +38,7 @@
   "dependencies": {
     "babel-runtime": "^6.26.0",
     "dsl_parser": "github:puntorigen/dsl_parser",
+    "highwayhash": "^3.0.0",
     "open_console": "github:puntorigen/console"
   },
   "devDependencies": {

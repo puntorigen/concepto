@@ -60,6 +60,8 @@ export default class concepto {
 		this.x_flags = { init_ok:false, dsl:file, watchdog:{ start:new Date(), end:new Date() } };
 		this.x_commands={}; 	//this.commands();
 		this.x_time_stats={};
+		this.x_state={};	// for dsl parser to share variables within commands and onMethods.
+		this.x_crypto_key=require('crypto').randomBytes(32); // for hash helper method
 		// grab class methods that start with the 'on' prefix
 		/* @TODO check if this is useful or needed 1-Aug-2020
 		this.x_on_methods={};
@@ -535,16 +537,16 @@ export default class concepto {
 		if (commands_.length==0) {
 			this.debug({ message:'findValidCommand: no command found.', color:'red' });
 		} else if (commands_.length==1) {
-			reply = commands_[1];
+			reply = commands_[0];
 			// try executing the node on the found commands_
 			try {
 				let test = await this.x_commands[reply.x_id].func(node);
 				reply.exec = test;
 				// @TODO test if _f4e is used; because its ugly
-				reply._f4e = commands_[1].x_id;
-				this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[1].x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
+				reply._f4e = commands_[0].x_id;
+				this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[0].x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
 			} catch(test_err) {
-				this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[1].x_id} ... ERROR! (nodeid:${node.id})`, color:'red' });
+				this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[0].x_id} ... ERROR! (nodeid:${node.id})`, color:'red' });
 				// @TODO emit('internal_error','findValidCommand')
 			}
 		} else {
@@ -821,6 +823,18 @@ export default class concepto {
 		let copy = node;
 		delete copy.id;
 		return copy;
+	}
+
+	hash(thing) {
+		// returns a hash of the given object, using google highwayhash (fastest)
+		const highwayhash = require('highwayhash');
+		if (typeof thing === 'string') {
+			const input = Buffer.from(thing);
+		} else if (typeof thing === 'object') {
+			// serialize object into buffer first
+			const input = Buffer.from(JSON.stringify(thing));
+		}
+		return highwayhash.asHexString(this.x_crypto_key, input);
 	}
 
 }
