@@ -62,6 +62,7 @@ export default class vue extends concepto {
 		}
 		this.debug('app dirs',this.x_state.dirs);
 		// read modelos node (virtual DB)
+		this.x_state.models = await this._readModelos();
 
 	}
 
@@ -119,6 +120,20 @@ export default class vue extends concepto {
 	// **************************
 	// 	Helper Methods
 	// **************************
+
+	/*
+	* Reads the node called modelos and creates tables definitions and managing code.
+	*/
+	async _readModelos() {
+		this.debug('_readModelos');
+		let modelos = await this.dsl_parser.getNodes({ text:'modelos', level:2, icon:'desktop_new', recurse:true }); //nodes_raw:true	
+		let resp = {
+			link:'',
+			type:'',
+			tables:{},
+			attributes:{}
+		};
+	}
 
 	/*
 	* Creates required app folder structure needed for file generation as the given specs and returns object with absolute paths
