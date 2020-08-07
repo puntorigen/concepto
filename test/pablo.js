@@ -7,8 +7,14 @@ var myArgs = process.argv.slice(2);
     let base = new vue(file,{ debug:true });
     await base.addCommands(require('./more_commands.js'));
     await base.init();
-    nodetest = await base.dsl_parser.getNode({ id: 'ID_789178185' }); // ID_789178185=imagen
+    /*
+    nodetest = await base.dsl_parser.getNode({ id: 'ID_861168397' }); // ID_789178185=imagen
     console.log('nodetest dice',nodetest);
+
+    // 6-ago-2020 @TODO test why this is not working as expected
+    let search = await base.dsl_parser.getNodes({ text:'config', recurse:false });
+    console.log('search config dice',search);
+
     console.time('findCommand');
     let findcom = await base.findCommand(nodetest,false);
     console.timeEnd('findCommand');
@@ -19,9 +25,10 @@ var myArgs = process.argv.slice(2);
     console.timeEnd('findValidCommand');
 	console.log('findValidCommand reply',findcom2);
 
-    console.log('total time passed, since constructor: '+base.secsPassed_()+' secs');
     // call writer (when it exists haha)
     //
+    */
+    console.log('total time passed, since constructor: '+base.secsPassed_()+' secs');
 
 })().catch(err => {
     console.error(err);

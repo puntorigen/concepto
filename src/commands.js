@@ -46,9 +46,9 @@ export default async function(context) {
 	*/
 	return {
 		'cancel': {...null_template,...{ x_icons:'button_cancel'} },
-		'def_config': {...null_template,...{ x_icons:'desktop_new', x_level:'2' } },
-		'def_modelos': {...null_template,...{ x_icons:'desktop_new', x_level:'2' } },
-		'def_assets': {...null_template,...{ x_icons:'desktop_new', x_level:'2' } },
+		'def_config': {...null_template,...{ x_icons:'desktop_new', x_level:'2', x_text_contains:'config' } },
+		'def_modelos': {...null_template,...{ x_icons:'desktop_new', x_level:'2', x_text_contains:'modelos' } },
+		'def_assets': {...null_template,...{ x_icons:'desktop_new', x_level:'2', x_text_contains:'assets' } },
 
 		'def_server': {
 			x_icons: 'desktop_new',

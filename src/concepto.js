@@ -100,7 +100,7 @@ export default class concepto {
 			this.x_console.outT({ message:`parsing nodes with dates ..`, color:'cyan' });
 			// @TODO I believe we should get the subnodes as cheerio references and request as needed on Writer method
 			//this.x_dsl_nodes = await this.dsl_parser.getNodes({ level:2, recurse:true });
-			this.x_dsl_nodes = await this.dsl_parser.getNodes({ level:2, recurse:false, nodes_raw:true });
+			this.x_dsl_nodes = await this.dsl_parser.getNodes({ level:'2', nodes_raw:true });
 			tmp.directory = path.dirname(path.resolve(this.x_flags.dsl));
 			if (this.x_config.cache) {
 				// @TODO implement cache (i'll port 'cache' for after testing version 1)
@@ -827,14 +827,18 @@ export default class concepto {
 
 	hash(thing) {
 		// returns a hash of the given object, using google highwayhash (fastest)
+		//this.debug_time({ id:`hash ${thing}` });
 		const highwayhash = require('highwayhash');
+		let input;
 		if (typeof thing === 'string') {
-			const input = Buffer.from(thing);
+			input = Buffer.from(thing);
 		} else if (typeof thing === 'object') {
 			// serialize object into buffer first
-			const input = Buffer.from(JSON.stringify(thing));
+			input = Buffer.from(JSON.stringify(thing));
 		}
-		return highwayhash.asHexString(this.x_crypto_key, input);
+		let resp = highwayhash.asHexString(this.x_crypto_key, input);
+		//this.debug_timeEnd({ id:`hash ${thing}` });;
+		return resp;
 	}
 
 }
