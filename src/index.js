@@ -61,6 +61,8 @@ export default class vue extends concepto {
 			});
 		}
 		this.debug('app dirs',this.x_state.dirs);
+		// read modelos node (virtual DB)
+
 	}
 
 	//Called after parsing nodes
@@ -120,12 +122,14 @@ export default class vue extends concepto {
 
 	/*
 	* Creates required app folder structure needed for file generation as the given specs and returns object with absolute paths
+	* optional output_dir overwrites base target directory (which is location of .dsl file + apptitle subdir)
 	*/
-	async _appFolders(keys) {
+	async _appFolders(keys,output_dir) {
 		let fs = require('fs').promises;
 		this.debug('_appFolders');
 		let path = require('path');
 		let dsl_folder = path.dirname(path.resolve(this.x_flags.dsl));
+		if (output_dir) dsl_folder=output_dir;
 		let resp = { base:dsl_folder, src:dsl_folder+path.sep+this.x_state.central_config.apptitle+path.sep };
 		resp.app = path.normalize(resp.src);
 		// depending on central config type
@@ -133,9 +137,8 @@ export default class vue extends concepto {
 			resp[key] = path.join(resp.app,keys[key]);
 			// create directories as needed
 			try {
-				await fs.mkdir(resp[key]);
+				await fs.mkdir(resp[key], { recursive:true });
 			} catch(errdir) {
-				console.log('error',errdir);
 			}
 		} 
 		// return
