@@ -27,14 +27,14 @@ export default class vue extends concepto {
 		this.x_console.outT({ message:`hello from vue`, color:`yellow` });
 		// define and assign commands
 		await this.addCommands(internal_commands);
-		this.debug('x_commands',this.x_commands);
+		//this.debug('x_commands',this.x_commands);
 		// init vue
 		this.x_state.config_node = await this._readConfig();
-		this.debug('config_node',this.x_state.config_node);
+		//this.debug('config_node',this.x_state.config_node);
 		this.x_state.central_config = await this._readCentralConfig();
-		this.debug('central_config',this.x_state.central_config);
+		//this.debug('central_config',this.x_state.central_config);
 		this.x_state.assets = await this._readAssets();
-		this.debug('assets_node',this.x_state.assets);
+		//this.debug('assets_node',this.x_state.assets);
 		if (this.x_state.central_config.componente) {
 			this.x_state.dirs = await this._appFolders({
 				'components': '',
@@ -62,8 +62,8 @@ export default class vue extends concepto {
 		}
 		this.debug('app dirs',this.x_state.dirs);
 		// read modelos node (virtual DB)
-		this.x_state.models = await this._readModelos();
-
+		this.x_state.models = await this._readModelos(); //alias: database tables
+		this.debug('models',this.x_state.models);
 	}
 
 	//Called after parsing nodes
@@ -122,43 +122,53 @@ export default class vue extends concepto {
 	// **************************
 
 	/*
-	* Reads the node called modelos and creates tables definitions and managing code.
+	* Reads the node called modelos and creates tables definitions and managing code (alias:database).
 	*/
 	async _readModelos() {
+		// @IDEA this method could return the insert/update/delete/select 'function code generators'
 		this.debug('_readModelos');
+		this.debug_time({ id:'readModelos' });
 		let modelos = await this.dsl_parser.getNodes({ text:'modelos', level:2, icon:'desktop_new', recurse:true }); //nodes_raw:true	
+		let tmp = { appname:this.x_state.config_node.name }, fields_map={};
 		let resp = {
-			link:'',
-			type:'',
 			tables:{},
 			attributes:{}
 		};
-	}
-
-	/*
-	* Creates required app folder structure needed for file generation as the given specs and returns object with absolute paths
-	* optional output_dir overwrites base target directory (which is location of .dsl file + apptitle subdir)
-	*/
-	async _appFolders(keys,output_dir) {
-		let fs = require('fs').promises;
-		this.debug('_appFolders');
-		let path = require('path');
-		let dsl_folder = path.dirname(path.resolve(this.x_flags.dsl));
-		if (output_dir) dsl_folder=output_dir;
-		let resp = { base:dsl_folder, src:dsl_folder+path.sep+this.x_state.central_config.apptitle+path.sep };
-		resp.app = path.normalize(resp.src);
-		// depending on central config type
-		for (let key in keys) {
-			resp[key] = path.join(resp.app,keys[key]);
-			// create directories as needed
-			try {
-				await fs.mkdir(resp[key], { recursive:true });
-			} catch(errdir) {
+		// map our values to real database values 
+		let type_map = {
+			id: { value:'INT AUTOINCREMENT PRIMARY KEY', alias:['identificador','autoid','autonum','key'] },
+			texto: { value:'STRING', alias:['text','varchar','string'] },
+			int: { value:'INTEGER', alias:['numero chico','small int','numero'] },
+			float: { value:'FLOAT', alias:['decimal','real'] },
+			boolean: { value:'BOOLEAN', alias:['boleano','true/false'] },
+			date: { value:'DATEONLY', alias:['fecha'] },
+			datetime: { value:'DATETIME', alias:['fechahora'] },
+			blob: { value:'BLOB', alias:['binario','binary'] }
+		};
+		// expand type_map into fields_map
+		Object.keys(type_map).map(function(x) {
+			let aliases = type_map[x].alias;
+			aliases.push(x);
+			aliases.map(y=>{fields_map[y]=type_map[x].value});
+		});
+		// parse nodes into tables with fields
+		if (modelos.length>0) {
+			modelos[0].attributes.map(x=>{ resp.attributes={...resp.attributes,...x} }); //modelos attributes
+			for (let table of modelos[0].nodes) {
+				let fields = {}; table.attributes.map(x=>{ fields={...fields,...x} }); //table attributes
+				resp.tables[table.text]={ fields:{} }; //create table
+				tmp.sql_fields=[];
+				for (let field in fields) {
+					resp.tables[table.text].fields[field] = fields_map[fields[field]]; //assign field with mapped value
+					tmp.sql_fields.push(field + ' ' + fields_map[fields[field]]);
+				}
+				resp.tables[table.text].sql = `CREATE TABLE ${table.text}(${tmp.sql_fields.join(',')})`;
 			}
-		} 
-		// return
+		}
+		this.debug_timeEnd({ id:'readModelos' });
 		return resp;
 	}
+
 
 	/*
 	* Reads assets node, and returns object with info
@@ -171,7 +181,7 @@ export default class vue extends concepto {
 		let sep = path.sep;
 		//
 		//this.debug('assets search',assets);
-		if (assets) {
+		if (assets.length>0) {
 			assets = assets[0];
 			// 15ms full
 			for (let child of assets.nodes) {
@@ -351,3 +361,21 @@ export default class vue extends concepto {
 	}
 }
 
+
+// private methods
+//sets/creates the same value to all keys in an object
+function setObjectKeys(obj,value) {
+	let resp=obj;
+	if (typeof resp === 'string') {
+		resp = {}
+		let keys=obj.split(',');
+		for (let i in keys) {
+			resp[keys[i]]=value;
+		}
+	} else {
+		for (let i in resp) {
+			resp[i]=value;
+		}
+	}
+	return resp;
+}

@@ -96,11 +96,14 @@ export default class concepto {
 				this.x_console.out({ message:`error: file ${this.x_flags.dsl} does't exist!`,data:d_err });
 				return;
 			}
-			// parse nodes ..
-			this.x_console.outT({ message:`parsing nodes with dates ..`, color:'cyan' });
 			// @TODO I believe we should get the subnodes as cheerio references and request as needed on Writer method
 			//this.x_dsl_nodes = await this.dsl_parser.getNodes({ level:2, recurse:true });
+			// 7-ago-2020 x_dsl_nodes commented out, because its not used anymore (was used for git version).
+			/*
+			// parse nodes ..
+			this.x_console.outT({ message:`parsing nodes with dates ..`, color:'cyan' });
 			this.x_dsl_nodes = await this.dsl_parser.getNodes({ level:'2', nodes_raw:true });
+			*/
 			tmp.directory = path.dirname(path.resolve(this.x_flags.dsl));
 			if (this.x_config.cache) {
 				// @TODO implement cache (i'll port 'cache' for after testing version 1)
@@ -652,6 +655,34 @@ export default class concepto {
 		} else if (this.x_config.debug) {
 			this.x_console.out({...{ prefix:'debug,dim', color:'dim' },...params});
 		}
+	}
+
+	/*
+	* Creates required app folder structure needed for file generation as the given specs and returns object with absolute paths
+	* optional output_dir overwrites base target directory (which is location of .dsl file + apptitle subdir)
+	* @param 	{Object} 	keys 			- Object with keys for which to return absolute paths. Each key must contain a relative output directory (can be nested) to be created and returned.
+	* @param 	{string} 	[output_dir]	- Overwrites the default output base directory (which is the location of the dsl file being proccessed).
+	* @return 	{Object}
+	*/
+	async _appFolders(keys,output_dir) {
+		let fs = require('fs').promises;
+		this.debug('_appFolders');
+		let path = require('path');
+		let dsl_folder = path.dirname(path.resolve(this.x_flags.dsl));
+		if (output_dir) dsl_folder=output_dir;
+		let resp = { base:dsl_folder, src:dsl_folder+path.sep+this.x_state.central_config.apptitle+path.sep };
+		resp.app = path.normalize(resp.src);
+		// depending on central config type
+		for (let key in keys) {
+			resp[key] = path.join(resp.app,keys[key]);
+			// create directories as needed
+			try {
+				await fs.mkdir(resp[key], { recursive:true });
+			} catch(errdir) {
+			}
+		} 
+		// return
+		return resp;
 	}
 
 	/**
