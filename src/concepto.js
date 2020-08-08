@@ -719,10 +719,10 @@ export default class concepto {
 		for (let q of brother_ids) {
 			let node = await this.dsl_parser.getNode({ id:q, recurse:false });
 			let command = await findValidCommand(node);
-			if (brother_x_ids.includes(x_id)) return true;
 			brother_x_ids.push(command.x_id);
+			if (brother_x_ids.includes(x_id)) return true;
 		}
-		resp = (brother_x_ids.includes(x_id));
+		//resp = (brother_x_ids.includes(x_id));
 		return resp;
 	}
 
