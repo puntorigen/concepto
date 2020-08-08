@@ -1,6 +1,6 @@
 export default async function(context) {
-	let dad = context, state = context.x_state;
-	let null_template = {	hint:'Allowed node type that must be ommited',
+	let state = context.x_state;
+	let null_template = {	hint:'Allowed node type that must not generate code',
 							func:async function(node) {
 								return context.reply_template({ hasChildren:false });
 							}
@@ -8,7 +8,7 @@ export default async function(context) {
 	/*
 	//special node names you can define:
 	'not_found': {
-		//executed when no there was no matching command for a node.
+		//executed when no there is no matching command for a node.
 		func: async function(node) {
 			return me.reply_template();
 		}
@@ -47,49 +47,31 @@ export default async function(context) {
 	return {
 		'cancel': {...null_template,...{ x_icons:'button_cancel'} },
 		'def_config': {...null_template,...{ x_icons:'desktop_new', x_level:'2', x_text_contains:'config' } },
-		'def_modelos': {...null_template,...{ x_icons:'desktop_new', x_level:'2', x_text_contains:'modelos' } },
+		'def_modelos': {...null_template,...{ x_icons:'desktop_new', x_level:'2', x_text_contains:'modelos|database' } },
 		'def_assets': {...null_template,...{ x_icons:'desktop_new', x_level:'2', x_text_contains:'assets' } },
 
-		'def_server': {
-			x_icons: 'desktop_new',
-			x_level: '2',
-			x_text_contains: 'server|servidor|api',
-			hint: 'Representa a un backend integrado con funciones de express.',
+		'def_example': {
+			x_icons: 'idea',
+			x_level: '>2',
+			hint: 'Example node func where node text is an html tag.',
 			func: async function(node) {
 				let resp = context.reply_template();
-				state.npm = {...state.npm, ...{ 'body_parser':'*', 'cookie-parser':'*' } };
-				state.central_config.static = false;
-				return resp;
-			}
-		},
-		'def_path': {
-			x_icons: 'list',
-			x_level: '3,4',
-			x_or_isparent: 'def_server',
-			x_not_icons: 'button_cancel,desktop_new,help',
-			hint: 'Carpeta para ubicacion de funcion de servidor',
-			func: async function(node) {
-				let resp = context.reply_template();
-				if (node.level==2) {
-					state.current_folder = node.text;
-				} else if (node.level==3 && await context.isExactParentID(node.id,'def_path')) {
-					let parent_node = await context.dsl_parser.getParentNode({ id:node.id });
-					state.current_folder = `${parent_node.text}/${node.id}`;
-				} else {
-					resp.valid=false;
-				}
+				resp.open = `<${node.text}>`;
+				resp.close = `</${node.text}>`;
 				return resp;
 			}
 		},
 
-		'def_imagen': {
-			x_icons:'idea',
+		'def_example_image': {
 			x_not_icons:'button_cancel,desktop_new,help',
 			x_not_empty:'attributes[:src]',
 			x_empty:'',
 			x_level:'>2',
+			hint: 'Example node func that renders an image tag with the node`s image',
 			func:async function(node) {
-				return context.reply_template({ otro:'Pablo' });
+				let resp = context.reply_template({ inherit_this_to_next_node_func:'Pablo', hasChildren:false });
+				resp.open = `<img src='${node.image}'/>`;
+				return resp;
 			}
 		}
 	}
