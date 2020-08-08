@@ -1,6 +1,6 @@
 {
   "name": "concepto",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Punto Origen - ES6 Concepto Class Interface",
   "keywords": [
     "creador",
@@ -38,7 +38,6 @@
   "dependencies": {
     "babel-runtime": "^6.26.0",
     "dsl_parser": "github:puntorigen/dsl_parser",
-    "highwayhash": "^3.0.0",
     "open_console": "github:puntorigen/console"
   },
   "devDependencies": {

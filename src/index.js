@@ -61,7 +61,6 @@ export default class concepto {
 		this.x_commands={}; 	//this.commands();
 		this.x_time_stats={};
 		this.x_state={};	// for dsl parser to share variables within commands and onMethods.
-		this.x_crypto_key=require('crypto').randomBytes(32); // for hash helper method
 		// grab class methods that start with the 'on' prefix
 		/* @TODO check if this is useful or needed 1-Aug-2020
 		this.x_on_methods={};
@@ -854,22 +853,6 @@ export default class concepto {
 		let copy = node;
 		delete copy.id;
 		return copy;
-	}
-
-	hash(thing) {
-		// returns a hash of the given object, using google highwayhash (fastest)
-		//this.debug_time({ id:`hash ${thing}` });
-		const highwayhash = require('highwayhash');
-		let input;
-		if (typeof thing === 'string') {
-			input = Buffer.from(thing);
-		} else if (typeof thing === 'object') {
-			// serialize object into buffer first
-			input = Buffer.from(JSON.stringify(thing));
-		}
-		let resp = highwayhash.asHexString(this.x_crypto_key, input);
-		//this.debug_timeEnd({ id:`hash ${thing}` });;
-		return resp;
 	}
 
 }
