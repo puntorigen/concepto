@@ -536,7 +536,7 @@ export default class concepto {
 	* @return 	{Command|boolean}
 	*/
 
-	async findValidCommand(node=this.throwIfMissing('node'),object=false) {
+	async findValidCommand(node=this.throwIfMissing('node'),object=false,x_command_shared_state={}) {
 		if (!this.x_flags.init_ok) throw new Error('error! the first called method must be init()!');
 		this.debug({ message:'findValidCommand called for node '+node.id, color:'yellow' });
 		let commands_ = await this.findCommand(node,false), reply={};
@@ -547,7 +547,7 @@ export default class concepto {
 			reply = commands_[0];
 			// try executing the node on the found commands_
 			try {
-				let test = await this.x_commands[reply.x_id].func(node);
+				let test = await this.x_commands[reply.x_id].func(node,x_command_shared_state);
 				reply.exec = test;
 				// @TODO test if _f4e is used; because its ugly
 				reply._f4e = commands_[0].x_id;
@@ -555,6 +555,10 @@ export default class concepto {
 			} catch(test_err) {
 				this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[0].x_id} ... ERROR! (nodeid:${node.id})`, color:'red' });
 				// @TODO emit('internal_error','findValidCommand')
+				resp.error = true;
+				resp.valid = false;
+				resp.catch = test_err;
+				// @TODO we should throw an error, so our parents catch it (9-AGO-20)
 			}
 		} else {
 			// more than one command found
@@ -563,7 +567,7 @@ export default class concepto {
 			for (let qm_index in commands_) {
 				let qm = commands_[qm_index];
 				try {
-					let test = await this.x_commands[qm.x_id].func(node);
+					let test = await this.x_commands[qm.x_id].func(node,x_command_shared_state);
 					if (test.valid) {
 						this.debug({ message:`findValidCommand: ${parseInt(qm_index)+1}/${commands_.length} testing command ${qm.x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
 						this.debug({ message:'---------------------', time:false });
@@ -579,6 +583,10 @@ export default class concepto {
 					}
 				} catch(test_err1) {
 					this.debug({ message:`findValidCommand: error executing command ${qm} (nodeid:${node.id})`, data:test_err1, color:'red' });
+					resp.error = true;
+					resp.valid = false;
+					resp.catch = test_err;
+					// @TODO we should throw an error, so our parents catch it (9-AGO-20) and break the loop
 				}
 			}
 		}
