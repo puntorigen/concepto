@@ -301,7 +301,8 @@ export default class concepto {
 		let keys = 'x_icons,x_not_icons,x_not_empty,x_not_text_contains,x_empty,x_text_starts,x_text_contains,x_level,x_or_hasparent,x_all_hasparent,x_or_isparent';
 		let command_requires = setObjectKeys(keys,'');
 		let node_features = {...command_requires}; let command_defaults = {...command_requires};
-		let def_matched = matched = setObjectKeys(keys,true), comm;
+		let def_matched = setObjectKeys(keys,true), comm;
+		let matched = {...def_matched};
 		this.debug(`findCommand for node ID ${node.id}`);
 		// iterate through commands
 		for (let key in this.x_commands) {

@@ -5,8 +5,8 @@ var myArgs = process.argv.slice(2);
     // testing code here
     let file = (myArgs.length>0)?myArgs[0]:'vue.dsl';
     let base = new vue(file,{ debug:true });
-    await base.addCommands(require('./more_commands.js'));
     await base.init();
+    await base.addCommands(require('./more_commands.js'));
     /*
     nodetest = await base.dsl_parser.getNode({ id: 'ID_861168397' }); // ID_789178185=imagen
     console.log('nodetest dice',nodetest);
