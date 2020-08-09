@@ -20,6 +20,7 @@ Concepto DSL Base Class: A base class (to be extended) for defining new language
         * [.addCommands(command_func)](#module_concepto+addCommands)
         * [.findCommand(node, [justone])](#module_concepto+findCommand) ⇒ <code>Command</code> \| <code>Array.&lt;Command&gt;</code>
         * [.findValidCommand(node, [object])](#module_concepto+findValidCommand) ⇒ <code>Command</code> \| <code>boolean</code>
+        * [.process()](#module_concepto+process) ⇒ <code>Object</code>
         * [.array_intersect(arr1, arr2)](#module_concepto+array_intersect) ⇒ <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code>
         * [.array_substract(arr1, arr2)](#module_concepto+array_substract) ⇒ <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code>
         * [.array_difference(arr1, arr2)](#module_concepto+array_difference) ⇒ <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code>
@@ -185,6 +186,12 @@ If no command is found, returns false.
 | node | <code>NodeDSL</code> |  | node for which to find the command |
 | [object] | <code>boolean</code> | <code>false</code> | if false returns the command reference, true returns the command execution answer |
 
+<a name="module_concepto+process"></a>
+
+### concepto.process() ⇒ <code>Object</code>
+This method traverses the dsl parsed tree, finds/execute x_commands and generated code as files.
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
 <a name="module_concepto+array_intersect"></a>
 
 ### concepto.array\_intersect(arr1, arr2) ⇒ <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code>

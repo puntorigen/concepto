@@ -275,6 +275,7 @@ export default class concepto {
 	*/
 
 	async addCommands(command_func) {
+		if (!this.x_flags.init_ok) throw new Error('error! the first called method must be init()!');
 		if (command_func && typeof command_func === 'function') { 
 			let t = await command_func(this);
 			if (typeof t === 'object') {
@@ -295,9 +296,11 @@ export default class concepto {
 	* @return 	{Command|Command[]}
 	*/
 	async findCommand(node=this.throwIfMissing('node'),justone=true) {
+		if (!this.x_flags.init_ok) throw new Error('error! the first called method must be init()!');
 		let resp = {...this.reply_template(),...{ id:'not_found', hint:'failover command'}}, xtest = [];
 		let keys = 'x_icons,x_not_icons,x_not_empty,x_not_text_contains,x_empty,x_text_starts,x_text_contains,x_level,x_or_hasparent,x_all_hasparent,x_or_isparent';
-		let command_requires = node_features = command_defaults = setObjectKeys(keys,'');
+		let command_requires = setObjectKeys(keys,'');
+		let node_features = {...command_requires}; let command_defaults = {...command_requires};
 		let def_matched = matched = setObjectKeys(keys,true), comm;
 		this.debug(`findCommand for node ID ${node.id}`);
 		// iterate through commands
@@ -533,6 +536,7 @@ export default class concepto {
 	*/
 
 	async findValidCommand(node=this.throwIfMissing('node'),object=false) {
+		if (!this.x_flags.init_ok) throw new Error('error! the first called method must be init()!');
 		this.debug({ message:'findValidCommand called for node '+node.id, color:'yellow' });
 		let commands_ = await this.findCommand(node,false), reply={};
 		// @TODO debug and test
@@ -579,6 +583,25 @@ export default class concepto {
 		}
 		if (Object.keys(reply).length==0) reply=false;
 		return reply;
+	}
+
+	// ****************************
+	// ADVANCED PROCESSING METHODS
+	// ****************************
+	
+	/**
+	* This method traverses the dsl parsed tree, finds/execute x_commands and generated code as files.
+	* @return 	{Object}
+	*/
+	async process() {
+		if (!this.x_flags.init_ok) throw new Error('error! the first called method must be init()!');
+		this.debug_time({ id:'process/writer' });
+		this.x_console.outT({ prefix:'process,yellow', message:`parsing raw nodes ..`, color:'cyan' });
+		let x_dsl_nodes = await this.dsl_parser.getNodes({ level:'2', nodes_raw:true });	
+		let resp = {};
+		//
+		this.debug_timeEnd({ id:'process/writer' });
+		return resp;
 	}
 
 	// **********************
