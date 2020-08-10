@@ -59,7 +59,7 @@ export default class concepto {
 		this.x_console.setPrefix({ prefix:this.x_config.class, color:'yellow' });
 		this.x_flags = { init_ok:false, dsl:file, watchdog:{ start:new Date(), end:new Date() } };
 		this.x_commands={}; 	//this.commands();
-		this.x_time_stats={};
+		this.x_time_stats={ times:{}, tables:{} };
 		this.x_state={};	// for dsl parser to share variables within commands and onMethods.
 		// grab class methods that start with the 'on' prefix
 		/* @TODO check if this is useful or needed 1-Aug-2020
@@ -151,7 +151,7 @@ export default class concepto {
 	* @return 	{Object}
 	*/
 	reply_template(init={}) {
-		let resp = { init:'', open:'', close:'', hasChildren:true, type:'simple', valid:true, _meta:{ _set:{}, cache:true } };
+		let resp = { init:'', open:'', close:'', code:'', hasChildren:true, type:'simple', valid:true, _meta:{ _set:{}, cache:true } };
 		return {...resp,...init};
 	}
 
@@ -165,14 +165,13 @@ export default class concepto {
 	}
 
 	/**
-	* Gets automatically executed after parsing all nodes of the given dsl (before onCompleteCodeTemplate)
+	* Gets automatically executed after parsing all nodes level 2 of the given dsl (before onCompleteCodeTemplate)
 	* @async
-	* @param 	{Array}		processedNodes		- reply content of writer method
-	* @return 	{NodeDSL[]}
+	* @param 	{Object}		processedNode		- reply content of process method per processed level2 node (keys of reply_template method)
+	* @return 	{Object}
 	*/
-	//@TODO rename to onAfterWriter (or onAfterProcess) later 4-ago-20
-	async onAfterWritten(processedNodes) {
-		return processedNodes;
+	async onAfterProcess(processedNode) {
+		return processedNode;
 	}
 
 	/**
@@ -215,11 +214,11 @@ export default class concepto {
 	/**
 	* Defines template for code given the processedNodes of writer(). Useful to prepend/append code before writting code to disk.
 	* @async
-	* @param 	{NodeDSL[]}		processedNodes		- array of nodes already processed before writing them to disk
-	* @return 	{NodeDSL[]}
+	* @param 	{Object}		processedNode		- reply content of process method per processed level2 node (keys of reply_template method)
+	* @return 	{Object}
 	*/
-	async onCompleteCodeTemplate(processedNodes) {
-		return processedNodes;
+	async onCompleteCodeTemplate(processedNode) {
+		return processedNode;
 	}
 
 	/**
@@ -240,7 +239,7 @@ export default class concepto {
 	/**
 	* Gets automatically called after all processing on nodes has being done. You usually create the files here using the received processedNodes array.
 	* @async
-	* @param 	{NodeDSL[]}		processedNodes		- array of nodes already processed ready to be written to disk
+	* @param 	{Object[]}		processedNodes		- array of nodes already processed (keys of reply_template method) ready to be written to disk
 	*/
 	async onCreateFiles(processedNodes) {
 	}
@@ -471,7 +470,6 @@ export default class concepto {
 			// test 10: x_or_isparent (currently mockup logic)
 			this.debug_time({ id:`${key} x_or_isparent` });
 			if (command_requires['x_or_isparent']!='' && allTrue(matched,keys)) {
-				// @TODO need to create isExactParentID method
 				matched.x_or_isparent=false;
 				for (let key of command_requires['x_or_isparent'].split(',')) {
 					let test = await this.isExactParentID(node.id,key);
@@ -604,14 +602,111 @@ export default class concepto {
 	* This method traverses the dsl parsed tree, finds/execute x_commands and generated code as files.
 	* @return 	{Object}
 	*/
-	async process() {
+		async process() {
 		if (!this.x_flags.init_ok) throw new Error('error! the first called method must be init()!');
-		this.debug_time({ id:'process/writer' });
+		this.debug_time({ id:'process/writer' }); let tmp = {}, resp = { nodes:[] };
+		// read nodes
 		this.x_console.outT({ prefix:'process,yellow', message:`parsing raw nodes ..`, color:'cyan' });
-		let x_dsl_nodes = await this.dsl_parser.getNodes({ level:'2', nodes_raw:true });	
-		let resp = {};
-		//
+		let x_dsl_nodes = await this.dsl_parser.getNodes({ level:2, nodes_raw:true });	
+		// 
+		for (let level2 of x_dsl_nodes) {
+			//this.debug('node',node);
+			// remove await when in production (use Promise.all after loop then)
+			let main = await this.process_main(level2,{});
+			// append to resp
+			resp.nodes.push(main);
+		}
+		// @TODO enable when not debugging
+		//await Promise.all(resp.nodes);
 		this.debug_timeEnd({ id:'process/writer' });
+		// if there was no error
+		if (!resp.error) {
+			// request creation of files
+			await this.onCreateFiles(resp.nodes);
+			this.x_console.title({ title:`Interpreter ${this.x_config.class} ENDED. Full Compilation took: ${this.secsPassed_()} secs`, color:'green' });
+			this.debug_table('Amount of Time Per Method');
+		} else {
+			// errors occurred
+		}
+		// some debug
+		this.debug('after nodes processing, resp says:',resp);
+		//this.debug('app state says:',this.x_state);
+		return resp;
+	}
+
+	// process helper methods 
+
+	// improved in my imagination ...
+	async sub_process(source_resp,nodei,custom_state) {
+		let resp = {...source_resp};
+		if (resp.hasChildren) {
+			let sub_nodes = await nodei.getNodes();
+			let new_state = {...custom_state};
+			for (let sublevel of sub_nodes) {
+				let real = await this.dsl_parser.getNode({ id:sublevel.id, nodes_raw:true, recurse:false });
+				let real2 = await this.findValidCommand(real,false,new_state);
+				if (nodei.state) new_state = {...real2.state}; // inherint state from last command if defined
+				if (real2) {
+					//resp.children.push(real2.exec);
+					//console.log('real2 dice:',real2);
+					resp.init += real2.exec.init;
+					resp.code += real2.exec.open;
+					if (!resp.x_ids) resp.x_ids=[]; resp.x_ids.push(real2.x_id);
+					resp = await this.sub_process(resp,sublevel,new_state);
+					resp.code += real2.exec.close;
+				}
+			}
+		}
+		return resp;
+	}
+
+	async process_main(node,custom_state) {
+		let resp={ 
+			state:custom_state,
+			id: node.id,
+			name: await this.onDefineNodeName(node),
+			file: await this.onDefineFilename(node),
+			init: '',
+			title: await this.onDefineTitle(node),
+			attributes: node.attributes,
+			code: '',
+			open: '',
+			close: '',
+			x_ids: [],
+			subnodes: node.nodes_raw.length
+		};
+		this.debug({ prefix:'process,yellow', message:`processing node ${node.text} ..`, color:'yellow' });
+		//
+		try {
+			let test = await this.findValidCommand(node,false,custom_state);
+			//this.debug(`test para node: text:${node.text}`,test);
+			if (test && test.exec) {
+				resp = {...resp,...test.exec};
+				resp.error = false;
+				resp.init += resp.init;
+				resp.code += resp.open;
+				if (!resp.x_ids) resp.x_ids=[]; resp.x_ids.push(test.x_id);
+				if (typeof node.getNodes === 'function') {
+					resp = await this.sub_process(resp,node,custom_state);
+				}
+				resp.code += resp.close;
+				resp.x_ids = resp.x_ids.join(',');
+			} else {
+				this.x_console.outT({ message:'error: FATAL, no method found for node processing.', data:{ id:node.id, level:node.level, text:node.text} });
+				await this.onErrors([`No method found for given node id ${node.id}, text: ${node.text} `]);
+				resp.valid=false, resp.hasChildren=false, resp.error=true;
+			}
+			// closing level2 'on' calls
+			resp = await this.onAfterProcess(resp);
+			resp = await this.onCompleteCodeTemplate(resp);
+			//
+		} catch(err) {
+			// @TODO currently findValidCommand doesn't throw an error when an error is found.
+			this.x_console.outT({ message:`error: Executing func x_command for node: id:${node.id}, level ${node.level}, text: ${node.text}.`, data:{ id:node.id, level:node.level, text:node.text, error:err }});
+			await this.onErrors([`Error executing func for x_command for node id ${node.id}, text: ${node.text} `]);
+			resp.valid=false, resp.hasChildren=false, resp.error=true;
+		}
+		// return
 		return resp;
 	}
 
@@ -723,19 +818,63 @@ export default class concepto {
 	* @param 	{string}		id		- id key (which can also have spaces and/or symbols) with a unique id to identify the stopwatch.
 	*/
 	debug_time() {
+		// instead of marking and showing time, we want in vue to build a time table and show it with another method
+		if (arguments.length>0) {
+			let keys = {...arguments[0]};
+			if (typeof keys.id !== 'undefined' && keys.id.indexOf('def_')!=-1) { //&& keys.id.indexOf('_x')!=-1
+				let filter_key = keys.id.split(' ')[0];
+				if (typeof this.x_time_stats.times[filter_key] === 'undefined') {
+					this.x_time_stats.times[filter_key] = new Date();
+					this.x_time_stats.tables[filter_key] = { command:filter_key, calls:0, average_call:0, total_ms:0 };
+				}
+			} else if (this.x_config.debug) {
+				this.x_console.time({...arguments[0]});
+			}
+		}
+	}
+	/*
+	debug_time() {
 		if (this.x_config.debug && arguments.length>0) {
 			this.x_console.time({...arguments[0]});
 		}
-	}
+	}*/
 
 	/**
 	* Helper method for measuring (end) time in ms from the call of debug_time() method.
 	* @param 	{string}		id		- id key used in the call for debug_time() method.
 	*/
 	debug_timeEnd() {
+		if (arguments.length>0) { 
+			let keys = {...arguments[0]}, filter_key=''; // && keys.id.indexOf('_x')!=-1
+			if (typeof keys.id !== 'undefined') filter_key = keys.id.split(' ')[0];
+			if (typeof keys.id !== 'undefined' && keys.id.indexOf('def_')!=-1 && filter_key in this.x_time_stats.times) {
+				//if (!this.x_time_stats.tables[keys.id]) this.x_time_stats.tables[keys.id] = {};
+				if (typeof this.x_time_stats.tables[filter_key] !== 'undefined') {
+					let timePassed = new Date().getTime() - this.x_time_stats.times[filter_key].getTime();
+					this.x_time_stats.tables[filter_key].calls += 1;
+					this.x_time_stats.tables[filter_key].total_ms = timePassed;
+					this.x_time_stats.tables[filter_key].average_call = Math.round(this.x_time_stats.tables[filter_key].total_ms/this.x_time_stats.tables[filter_key].calls);
+				}
+			} else if (this.x_config.debug) {
+				this.x_console.timeEnd({...{ color:'dim',prefix:'debug,dim' },...arguments[0]});
+			}
+		}
+	}
+	/*debug_timeEnd() {
 		if (this.x_config.debug && arguments.length>0) {
 			this.x_console.timeEnd({...{ color:'dim',prefix:'debug,dim' },...arguments[0]});
 		}
+	}*/
+
+	/**
+	* Helper method for showing a table with each command execution time and amount of calls
+	* @param 	{string}		title		- Optional custom title for table.
+	*/
+	debug_table(title) {
+		// build a table with x_time_stats and show it on the console
+		let table = [];
+		Object.keys(this.x_time_stats.tables).map(function(key) { table.push(this.x_time_stats.tables[key]); }.bind(this));
+		this.x_console.table({ title:(title)?title:'Times per Command', data:table, color:'cyan' });
 	}
 
 	/**
@@ -960,7 +1099,7 @@ function allTrue(object,keys) {
 //returns true if num meets the conditions listed on test (false otherwise)
 function numberInCondition(num,test) {	
 	let resp=true;
-	if (!isNaN(test) && test==parseInt(test)) {
+	if (!isNaN(num) && num==parseInt(test)) {
 		// if num=test
 	} else if (test.indexOf('>')!=-1 || test.indexOf('<')!=-1) {
 		// 'and/all' (>2,<7)

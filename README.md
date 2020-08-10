@@ -9,11 +9,11 @@ Concepto DSL Base Class: A base class (to be extended) for defining new language
         * [.init()](#module_concepto+init)
         * [.reply_template([init])](#module_concepto+reply_template) ⇒ <code>Object</code>
         * [.onInit()](#module_concepto+onInit)
-        * [.onAfterWritten(processedNodes)](#module_concepto+onAfterWritten) ⇒ <code>Array.&lt;NodeDSL&gt;</code>
+        * [.onAfterProcess(processedNode)](#module_concepto+onAfterProcess) ⇒ <code>Object</code>
         * [.onDefineTitle(node)](#module_concepto+onDefineTitle) ⇒ <code>String</code>
         * [.onDefineFilename(node)](#module_concepto+onDefineFilename) ⇒ <code>String</code>
         * [.onDefineNodeName(node)](#module_concepto+onDefineNodeName) ⇒ <code>String</code>
-        * [.onCompleteCodeTemplate(processedNodes)](#module_concepto+onCompleteCodeTemplate) ⇒ <code>Array.&lt;NodeDSL&gt;</code>
+        * [.onCompleteCodeTemplate(processedNode)](#module_concepto+onCompleteCodeTemplate) ⇒ <code>Object</code>
         * [.onPrepare()](#module_concepto+onPrepare)
         * [.onErrors(errors)](#module_concepto+onErrors)
         * [.onCreateFiles(processedNodes)](#module_concepto+onCreateFiles)
@@ -28,6 +28,7 @@ Concepto DSL Base Class: A base class (to be extended) for defining new language
         * [.debug(message, [data])](#module_concepto+debug)
         * [.debug_time(id)](#module_concepto+debug_time)
         * [.debug_timeEnd(id)](#module_concepto+debug_timeEnd)
+        * [.debug_table(title)](#module_concepto+debug_table)
         * [.hasBrotherID(id, x_id)](#module_concepto+hasBrotherID) ⇒ <code>Boolean</code>
         * [.hasBrotherBefore(id)](#module_concepto+hasBrotherBefore) ⇒ <code>Boolean</code>
         * [.hasBrotherNext(id)](#module_concepto+hasBrotherNext) ⇒ <code>Boolean</code>
@@ -66,16 +67,16 @@ Gets automatically executed after init method finishes.
 You should place any parser preparation steps here (ex. load commands)
 
 **Kind**: instance method of [<code>concepto</code>](#module_concepto)  
-<a name="module_concepto+onAfterWritten"></a>
+<a name="module_concepto+onAfterProcess"></a>
 
-### concepto.onAfterWritten(processedNodes) ⇒ <code>Array.&lt;NodeDSL&gt;</code>
-Gets automatically executed after parsing all nodes of the given dsl (before onCompleteCodeTemplate)
+### concepto.onAfterProcess(processedNode) ⇒ <code>Object</code>
+Gets automatically executed after parsing all nodes level 2 of the given dsl (before onCompleteCodeTemplate)
 
 **Kind**: instance method of [<code>concepto</code>](#module_concepto)  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| processedNodes | <code>Array</code> | reply content of writer method |
+| processedNode | <code>Object</code> | reply content of process method per processed level2 node (keys of reply_template method) |
 
 <a name="module_concepto+onDefineTitle"></a>
 
@@ -112,14 +113,14 @@ Gets automatically called for naming the class/page by testing node (similar to 
 
 <a name="module_concepto+onCompleteCodeTemplate"></a>
 
-### concepto.onCompleteCodeTemplate(processedNodes) ⇒ <code>Array.&lt;NodeDSL&gt;</code>
+### concepto.onCompleteCodeTemplate(processedNode) ⇒ <code>Object</code>
 Defines template for code given the processedNodes of writer(). Useful to prepend/append code before writting code to disk.
 
 **Kind**: instance method of [<code>concepto</code>](#module_concepto)  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| processedNodes | <code>Array.&lt;NodeDSL&gt;</code> | array of nodes already processed before writing them to disk |
+| processedNode | <code>Object</code> | reply content of process method per processed level2 node (keys of reply_template method) |
 
 <a name="module_concepto+onPrepare"></a>
 
@@ -147,7 +148,7 @@ Gets automatically called after all processing on nodes has being done. You usua
 
 | Param | Type | Description |
 | --- | --- | --- |
-| processedNodes | <code>Array.&lt;NodeDSL&gt;</code> | array of nodes already processed ready to be written to disk |
+| processedNodes | <code>Array.&lt;Object&gt;</code> | array of nodes already processed (keys of reply_template method) ready to be written to disk |
 
 <a name="module_concepto+addCommands"></a>
 
@@ -273,6 +274,17 @@ Helper method for measuring (end) time in ms from the call of debug_time() metho
 | Param | Type | Description |
 | --- | --- | --- |
 | id | <code>string</code> | id key used in the call for debug_time() method. |
+
+<a name="module_concepto+debug_table"></a>
+
+### concepto.debug\_table(title)
+Helper method for showing a table with each command execution time and amount of calls
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| title | <code>string</code> | Optional custom title for table. |
 
 <a name="module_concepto+hasBrotherID"></a>
 
