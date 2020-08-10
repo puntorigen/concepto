@@ -308,7 +308,7 @@ export default class concepto {
 		for (let key in this.x_commands) {
 			let comm_keys = Object.keys(this.x_commands[key]);
 			// reset defaults for current command
-			matched = def_matched;
+			matched = {...def_matched};
 			// build template for used keys
 			command_requires = {...command_defaults,...this.x_commands[key]};
 			delete command_requires.func;
@@ -333,7 +333,7 @@ export default class concepto {
 					matched.x_not_icons = false;
 				} else if (command_requires['x_not_icons']!='') {
 					// if node has any icons of the x_not_icons, return false aka intersect values, and if any assign false.
-					matched.x_not_icons = (this.array_intersect(command_requires['x_not_icons'].split(','), node.icons).length>1)?false:true;
+					matched.x_not_icons = (this.array_intersect(command_requires['x_not_icons'].split(','), node.icons).length>0)?false:true;
 				}
 			}
 			this.debug_timeEnd({ id:`${key} x_not_icons` });
@@ -414,7 +414,7 @@ export default class concepto {
 			this.debug_timeEnd({ id:`${key} x_empty` });
 			// test 6: x_text_contains
 			this.debug_time({ id:`${key} x_text_contains` });
-			if (command_requires['x_text_contains']!='' && allTrue(matched,keys)) {
+			if (allTrue(matched,keys) && command_requires['x_text_contains']!='') {
 				// @TODO here we are
 				if (command_requires['x_text_contains'].indexOf('|')!=-1) {
 					// 'or' delimiter
@@ -425,7 +425,7 @@ export default class concepto {
 							break;
 						}
 					}
-				} else {
+				} else if (command_requires['x_text_contains'].indexOf(',')!=-1) {
 					// 'and' delimiter
 					for (let key of command_requires['x_text_contains'].split(',')) {
 						if (node.text.indexOf(key)==-1) {
@@ -433,6 +433,8 @@ export default class concepto {
 							break;
 						}
 					}
+				} else if (node.text.toLowerCase().indexOf(command_requires['x_text_contains'].toLowerCase())==-1) {
+					matched.x_text_contains=false;
 				}
 			}
 			this.debug_timeEnd({ id:`${key} x_text_contains` });
@@ -447,7 +449,7 @@ export default class concepto {
 			if (command_requires['x_or_hasparent']!='' && allTrue(matched,keys)) {
 				// @TODO need to create hasParentID method
 				matched.x_or_hasparent=false;
-				let test = await this.hasParentID(node.x_id,command_requires['x_or_hasparent']);
+				let test = await this.hasParentID(node.id,command_requires['x_or_hasparent']);
 				if (test) {
 					matched.x_or_hasparent=true;
 				}
@@ -458,7 +460,7 @@ export default class concepto {
 			if (command_requires['x_all_hasparent']!='' && allTrue(matched,keys)) {
 				// @TODO need to create hasParentID method
 				for (let key of command_requires['x_all_hasparent'].split(',')) {
-					let test = await this.hasParentID(node.x_id,key);
+					let test = await this.hasParentID(node.id,key);
 					if (!test) {
 						matched.x_all_hasparent=false;
 						break;
@@ -472,7 +474,7 @@ export default class concepto {
 				// @TODO need to create isExactParentID method
 				matched.x_or_isparent=false;
 				for (let key of command_requires['x_or_isparent'].split(',')) {
-					let test = await this.isExactParentID(node.x_id,key);
+					let test = await this.isExactParentID(node.id,key);
 					if (!test) {
 						matched.x_or_isparent=true;
 						break;
@@ -538,7 +540,7 @@ export default class concepto {
 
 	async findValidCommand(node=this.throwIfMissing('node'),object=false,x_command_shared_state={}) {
 		if (!this.x_flags.init_ok) throw new Error('error! the first called method must be init()!');
-		this.debug({ message:'findValidCommand called for node '+node.id, color:'yellow' });
+		this.debug({ message:`findValidCommand called for node ${node.id}, level:${node.level}, text:${node.text}`, color:'yellow' });
 		let commands_ = await this.findCommand(node,false), reply={};
 		// @TODO debug and test
 		if (commands_.length==0) {
@@ -555,9 +557,9 @@ export default class concepto {
 			} catch(test_err) {
 				this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[0].x_id} ... ERROR! (nodeid:${node.id})`, color:'red' });
 				// @TODO emit('internal_error','findValidCommand')
-				resp.error = true;
-				resp.valid = false;
-				resp.catch = test_err;
+				reply.error = true;
+				reply.valid = false;
+				reply.catch = test_err;
 				// @TODO we should throw an error, so our parents catch it (9-AGO-20)
 			}
 		} else {
@@ -583,9 +585,9 @@ export default class concepto {
 					}
 				} catch(test_err1) {
 					this.debug({ message:`findValidCommand: error executing command ${qm} (nodeid:${node.id})`, data:test_err1, color:'red' });
-					resp.error = true;
-					resp.valid = false;
-					resp.catch = test_err;
+					reply.error = true;
+					reply.valid = false;
+					reply.catch = test_err1;
 					// @TODO we should throw an error, so our parents catch it (9-AGO-20) and break the loop
 				}
 			}
@@ -722,7 +724,7 @@ export default class concepto {
 	*/
 	debug_time() {
 		if (this.x_config.debug && arguments.length>0) {
-			this.x_console.time(arguments[0]);
+			this.x_console.time({...arguments[0]});
 		}
 	}
 
@@ -808,7 +810,7 @@ export default class concepto {
 		let x_ids = x_id.split(',');
 		let parents = await this.dsl_parser.getParentNodesIDs({ id, array:true });
 		for (let parent_id of parents) {
-			let node = await this.dsl_parser.getNode({ parent_id, recurse:false });
+			let node = await this.dsl_parser.getNode({ id:parent_id, recurse:false });
 			let command = await this.findValidCommand(node);
 			if (command && x_ids.includes(command.x_id)) {
 				return true;
@@ -958,7 +960,9 @@ function allTrue(object,keys) {
 //returns true if num meets the conditions listed on test (false otherwise)
 function numberInCondition(num,test) {	
 	let resp=true;
-	if (test.indexOf('>')!=-1 || test.indexOf('<')!=-1) {
+	if (!isNaN(test) && test==parseInt(test)) {
+		// if num=test
+	} else if (test.indexOf('>')!=-1 || test.indexOf('<')!=-1) {
 		// 'and/all' (>2,<7)
 		for (let i of test.split(',')) {
 			if (i.substring(0,1)=='>') {
