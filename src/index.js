@@ -294,7 +294,7 @@ export default class concepto {
 	* @param 	{boolean}		[justone=true]	- indicates if you want just the first match (true), or all commands that match the given node (false)
 	* @return 	{Command|Command[]}
 	*/
-	async findCommand(node=this.throwIfMissing('node'),justone=true) {
+	async findCommand({node=this.throwIfMissing('node'),justone=true, show_debug=true}={}) {
 		if (!this.x_flags.init_ok) throw new Error('error! the first called method must be init()!');
 		let resp = {...this.reply_template(),...{ id:'not_found', hint:'failover command'}}, xtest = [];
 		let keys = 'x_icons,x_not_icons,x_not_empty,x_not_text_contains,x_empty,x_text_starts,x_text_contains,x_level,x_or_hasparent,x_all_hasparent,x_or_isparent';
@@ -302,7 +302,7 @@ export default class concepto {
 		let node_features = {...command_requires1}; 
 		let command_defaults = {...command_requires1};
 		let def_matched = setObjectKeys(keys,true), comm;
-		this.debug(`findCommand for node ID ${node.id}`);
+		if (show_debug) this.debug(`findCommand for node ID ${node.id}`);
 		// iterate through commands
 		for (let key in this.x_commands) {
 			//let comm_keys = Object.keys(this.x_commands[key]);
@@ -501,7 +501,7 @@ export default class concepto {
 			//await setImmediatePromise();
 		}
 		// sort by priority
-		this.debug_time({ id:`sorting by priority` });
+		if (show_debug) this.debug_time({ id:`sorting by priority` });
 		let sorted = xtest.sort(function(a,b) {
 			if (a.x_priority!=-1 && b.x_priority!=-1) {
 				// sort by x_priority
@@ -511,7 +511,7 @@ export default class concepto {
 				return b.priority-a.priority;
 			}
 		});
-		this.debug_timeEnd({ id:`sorting by priority` });
+		if (show_debug) this.debug_timeEnd({ id:`sorting by priority` });
 		// reply
 		if (!justone) {
 			/*
@@ -538,10 +538,10 @@ export default class concepto {
 	* @return 	{Command|boolean}
 	*/
 
-	async findValidCommand(node=this.throwIfMissing('node'),object=false,x_command_shared_state={}) {
+	async findValidCommand({node=this.throwIfMissing('node'),object=false,x_command_shared_state={},show_debug=true}={}) {
 		if (!this.x_flags.init_ok) throw new Error('error! the first called method must be init()!');
-		this.debug({ message:`findValidCommand called for node ${node.id}, level:${node.level}, text:${node.text}`, color:'yellow' });
-		let commands_ = await this.findCommand(node,false), reply={};
+		if (show_debug) this.debug({ message:`findValidCommand called for node ${node.id}, level:${node.level}, text:${node.text}`, color:'yellow' });
+		let commands_ = await this.findCommand({node,justone:false,show_debug:show_debug}), reply={};
 		// @TODO debug and test
 		if (commands_.length==0) {
 			this.debug({ message:'findValidCommand: no command found.', color:'red' });
@@ -553,9 +553,9 @@ export default class concepto {
 				reply.exec = test;
 				// @TODO test if _f4e is used; because its ugly
 				reply._f4e = commands_[0].x_id;
-				this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[0].x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
+				if (show_debug) this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[0].x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
 			} catch(test_err) {
-				this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[0].x_id} ... ERROR! (nodeid:${node.id})`, color:'red' });
+				if (show_debug) this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[0].x_id} ... ERROR! (nodeid:${node.id})`, color:'red' });
 				// @TODO emit('internal_error','findValidCommand')
 				reply.error = true;
 				reply.valid = false;
@@ -564,15 +564,15 @@ export default class concepto {
 			}
 		} else {
 			// more than one command found
-			this.debug({ message:`findValidCommand: ${commands_.length} commands found: (nodeid:${node.id})`, color:'green' });
+			if (show_debug) this.debug({ message:`findValidCommand: ${commands_.length} commands found: (nodeid:${node.id})`, color:'green' });
 			// test each command
 			for (let qm_index in commands_) {
 				let qm = commands_[qm_index];
 				try {
 					let test = await this.x_commands[qm.x_id].func(node,x_command_shared_state);
 					if (test.valid) {
-						this.debug({ message:`findValidCommand: ${parseInt(qm_index)+1}/${commands_.length} testing command ${qm.x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
-						this.debug({ message:'---------------------', time:false });
+						if (show_debug) this.debug({ message:`findValidCommand: ${parseInt(qm_index)+1}/${commands_.length} testing command ${qm.x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
+						if (show_debug) this.debug({ message:'---------------------', time:false });
 						if (object) {
 							reply=test;
 						} else {
@@ -584,7 +584,7 @@ export default class concepto {
 						break;
 					}
 				} catch(test_err1) {
-					this.debug({ message:`findValidCommand: error executing command ${qm} (nodeid:${node.id})`, data:test_err1, color:'red' });
+					if (show_debug) this.debug({ message:`findValidCommand: error executing command ${qm} (nodeid:${node.id})`, data:test_err1, color:'red' });
 					reply.error = true;
 					reply.valid = false;
 					reply.catch = test_err1;
@@ -641,14 +641,15 @@ export default class concepto {
 	// improved in my imagination ...
 	async sub_process(source_resp,nodei,custom_state) {
 		let resp = {...source_resp};
-		if (resp.hasChildren==true) {
+		if (resp.hasChildren==true && resp.valid==true) {
 			let sub_nodes = await nodei.getNodes();
 			let new_state = {...custom_state};
 			for (let sublevel of sub_nodes) {
 				let real = await this.dsl_parser.getNode({ id:sublevel.id, nodes_raw:true, recurse:false });
-				let real2 = await this.findValidCommand(real,false,new_state);
+				let real2 = await this.findValidCommand({ node:real, object:false, x_command_shared_state:new_state });
+				//console.log('sub_process->findValidCommand node:'+real.text,real2);
 				if (nodei.state) new_state = {...real2.state}; // inherint state from last command if defined
-				if (real2) {
+				if (real2 && real2.exec && real2.exec.valid==true) {
 					//resp.children.push(real2.exec);
 					//console.log('real2 dice:',real2);
 					resp.init += real2.exec.init;
@@ -677,12 +678,13 @@ export default class concepto {
 			x_ids: [],
 			subnodes: node.nodes_raw.length
 		};
-		this.debug({ prefix:'process,yellow', message:`processing node ${node.text} ..`, color:'yellow' });
+		this.x_console.outT({ prefix:'process,yellow', message:`processing node ${node.text} ..`, color:'yellow' });
 		//
 		try {
-			let test = await this.findValidCommand(node,false,custom_state);
+			//console.log('process_main->findValidCommand node:'+node.text);
+			let test = await this.findValidCommand({ node:node,object:false,x_command_shared_state:custom_state });
 			//this.debug(`test para node: text:${node.text}`,test);
-			if (test && test.exec) {
+			if (test && test.exec && test.exec.valid==true) {
 				resp = {...resp,...test.exec};
 				resp.error = false;
 				resp.init += resp.init;
@@ -892,7 +894,7 @@ export default class concepto {
 		let brother_x_ids = [], resp=false;
 		for (let q of brother_ids) {
 			let node = await this.dsl_parser.getNode({ id:q, recurse:false });
-			let command = await findValidCommand(node);
+			let command = await findValidCommand({ node:node, show_debug:false });
 			brother_x_ids.push(command.x_id);
 			if (brother_x_ids.includes(x_id)==true) return true;
 		}
@@ -932,7 +934,7 @@ export default class concepto {
 	async isExactParentID(id=this.throwIfMissing('id'),x_id=this.throwIfMissing('x_id')) {
 		// @TODO test it after having 'real' commands on some parser 4-ago-20
 		let parent_node = await this.dsl_parser.getParentNode({ id });
-		let parent_command = await this.findValidCommand(parent_node);
+		let parent_command = await this.findValidCommand({ node:parent_node, show_debug:false });
 		if (parent_command && parent_command.x_id == x_id) {
 			return true;
 		}
@@ -952,7 +954,7 @@ export default class concepto {
 		let parents = await this.dsl_parser.getParentNodesIDs({ id, array:true });
 		for (let parent_id of parents) {
 			let node = await this.dsl_parser.getNode({ id:parent_id, recurse:false });
-			let command = await this.findValidCommand(node);
+			let command = await this.findValidCommand({ node, show_debug:false });
 			if (command && x_ids.includes(command.x_id)) {
 				return true;
 			}
@@ -973,7 +975,7 @@ export default class concepto {
 		let resp = [];
 		for (let parent_id of parents) {
 			let node = await this.dsl_parser.getNode({ parent_id, recurse:false });
-			let command = await this.findValidCommand(node);
+			let command = await this.findValidCommand({ node, show_debug:false });
 			if (command && array) {
 				resp.push({ id:parent_id, x_id:command.x_id });
 			} else {
