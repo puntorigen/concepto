@@ -151,7 +151,7 @@ export default class concepto {
 	* @return 	{Object}
 	*/
 	reply_template(init={}) {
-		let resp = { init:'', open:'', close:'', code:'', hasChildren:true, type:'simple', valid:true, _meta:{ _set:{}, cache:true } };
+		let resp = { init:'', open:'', close:'', hasChildren:true, type:'simple', valid:true, _meta:{ _set:{}, cache:true } };
 		return {...resp,...init};
 	}
 
@@ -298,35 +298,36 @@ export default class concepto {
 		if (!this.x_flags.init_ok) throw new Error('error! the first called method must be init()!');
 		let resp = {...this.reply_template(),...{ id:'not_found', hint:'failover command'}}, xtest = [];
 		let keys = 'x_icons,x_not_icons,x_not_empty,x_not_text_contains,x_empty,x_text_starts,x_text_contains,x_level,x_or_hasparent,x_all_hasparent,x_or_isparent';
-		let command_requires = setObjectKeys(keys,'');
-		let node_features = {...command_requires}; let command_defaults = {...command_requires};
+		let command_requires1 = setObjectKeys(keys,'');
+		let node_features = {...command_requires1}; 
+		let command_defaults = {...command_requires1};
 		let def_matched = setObjectKeys(keys,true), comm;
-		let matched = {...def_matched};
 		this.debug(`findCommand for node ID ${node.id}`);
 		// iterate through commands
 		for (let key in this.x_commands) {
-			let comm_keys = Object.keys(this.x_commands[key]);
+			//let comm_keys = Object.keys(this.x_commands[key]);
 			// reset defaults for current command
-			matched = {...def_matched};
+			let matched = {...def_matched};
 			// build template for used keys
-			command_requires = {...command_defaults,...this.x_commands[key]};
+			let command_requires = {...command_defaults,...this.x_commands[key]};
 			delete command_requires.func;
 			// test command features vs node features
 			// test 1: icon match
-			this.debug_time({ id:`${key} x_icons` });
+			
 			//if (this.x_config.debug) this.x_console.time({ id:`${key} x_icons` });
 			if (command_requires['x_icons']!='') {
+				this.debug_time({ id:`${key} x_icons` });
 				for (let qi of command_requires.x_icons.split(',')) {
 					matched.x_icons = (node.icons.includes(qi))?true:false;
 					if (!matched.x_icons) break;
 					//await setImmediatePromise();
 				}
-			}
-			this.debug_timeEnd({ id:`${key} x_icons` });
+				this.debug_timeEnd({ id:`${key} x_icons` });
+			}			
 			//if (this.x_config.debug) this.x_console.timeEnd({ id:`${key} x_icons` });
 			// test 2: x_not_icons
-			this.debug_time({ id:`${key} x_not_icons` });
-			if (matched.x_icons && command_requires['x_not_icons']!='') {
+			if (command_requires['x_not_icons']!='' && allTrue(matched,keys)) {
+				this.debug_time({ id:`${key} x_not_icons` });
 				// special case first
 				if (node.icons.length>0 && command_requires['x_not_icons']!='' && ['*'].includes(command_requires['x_not_icons'])) {
 					matched.x_not_icons = false;
@@ -334,12 +335,12 @@ export default class concepto {
 					// if node has any icons of the x_not_icons, return false aka intersect values, and if any assign false.
 					matched.x_not_icons = (this.array_intersect(command_requires['x_not_icons'].split(','), node.icons).length>0)?false:true;
 				}
+				this.debug_timeEnd({ id:`${key} x_not_icons` });
 			}
-			this.debug_timeEnd({ id:`${key} x_not_icons` });
 			// test 3: x_not_empty. example: attributes[event,name] aka key[value1||value2] in node
 			// supports multiple requirements using + as delimiter "attributes[event,name]+color"
-			this.debug_time({ id:`${key} x_not_empty` });
 			if (command_requires['x_not_empty']!='' && allTrue(matched,keys)) {
+				this.debug_time({ id:`${key} x_not_empty` });
 				//this.debug(`test x_not_empty: ${command_requires['x_not_empty']}`);
 				// transform x_not_empty value => ex. attributes[event,name]+color => attributes[event+name],color in com_reqs
 				let com_reqs=command_requires['x_not_empty'].replace(/\+/g,'/').replace(/\,/g,'+').replace(/\//g,',').split(',');
@@ -362,7 +363,9 @@ export default class concepto {
 						let has_keys = [];
 						if (node[array_key]) {
 							for(let obj of node[array_key]) {
-								Object.keys(obj).filter(x => has_keys.push(x));
+								Object.keys(obj).filter(function(x) {
+									has_keys.push(x)
+								});
 							}
 						}
 						if (this.array_intersect(has_keys,keys).length!=keys.length) {
@@ -379,23 +382,23 @@ export default class concepto {
 						}
 					}
 				}
+				this.debug_timeEnd({ id:`${key} x_not_empty` });
 			}
-			this.debug_timeEnd({ id:`${key} x_not_empty` });
 			// test 4: x_not_text_contains
 			// can have multiple values.. ex: margen,arriba
-			this.debug_time({ id:`${key} x_not_text_contains` });
 			if (command_requires['x_not_text_contains']!='' && allTrue(matched,keys)) {
+				this.debug_time({ id:`${key} x_not_text_contains` });
 				for (let word of command_requires['x_not_text_contains'].split(',')) {
 					if (node.text.indexOf(word)!=-1) {
 						matched.x_not_text_contains=false;
 						break;
 					}
 				}
+				this.debug_timeEnd({ id:`${key} x_not_text_contains` });
 			}
-			this.debug_timeEnd({ id:`${key} x_not_text_contains` });
 			// test 5: x_empty (node keys that must be empty (undefined also means not empty))
-			this.debug_time({ id:`${key} x_empty` });
 			if (command_requires['x_empty']!='' && allTrue(matched,keys)) {
+				this.debug_time({ id:`${key} x_empty` });
 				for (let key of command_requires['x_empty'].split(',')) {
 					let testpath = getVal(node,key);
 					if (typeof testpath === 'string' && testpath!='') {
@@ -409,21 +412,23 @@ export default class concepto {
 						break;
 					}
 				}
+				this.debug_timeEnd({ id:`${key} x_empty` });
 			}
-			this.debug_timeEnd({ id:`${key} x_empty` });
 			// test 6: x_text_contains
-			this.debug_time({ id:`${key} x_text_contains` });
 			if (allTrue(matched,keys) && command_requires['x_text_contains']!='') {
+				this.debug_time({ id:`${key} x_text_contains` });
 				// @TODO here we are
 				if (command_requires['x_text_contains'].indexOf('|')!=-1) {
 					// 'or' delimiter
-					matched.x_text_contains=false;
+					let n_match=false;
 					for (let key of command_requires['x_text_contains'].split('|')) {
 						if (node.text.indexOf(key)!=-1) {
-							matched.x_text_contains=true;
+							n_match=true;
 							break;
 						}
 					}
+					matched.x_text_contains=n_match;
+
 				} else if (command_requires['x_text_contains'].indexOf(',')!=-1) {
 					// 'and' delimiter
 					for (let key of command_requires['x_text_contains'].split(',')) {
@@ -435,49 +440,44 @@ export default class concepto {
 				} else if (node.text.toLowerCase().indexOf(command_requires['x_text_contains'].toLowerCase())==-1) {
 					matched.x_text_contains=false;
 				}
+				this.debug_timeEnd({ id:`${key} x_text_contains` });
 			}
-			this.debug_timeEnd({ id:`${key} x_text_contains` });
 			// test 7: x_level - example: '2,3,4' (any) or '>2,<7' (all)
-			this.debug_time({ id:`${key} x_level` });
 			if (command_requires['x_level']!='' && allTrue(matched,keys)) {
+				this.debug_time({ id:`${key} x_level` });
 				matched.x_level=numberInCondition(node.level,command_requires['x_level']);	
+				this.debug_timeEnd({ id:`${key} x_level` });
 			}
-			this.debug_timeEnd({ id:`${key} x_level` });
 			// test 8: x_or_hasparent (currently mockup logic)
-			this.debug_time({ id:`${key} x_or_hasparent` });
 			if (command_requires['x_or_hasparent']!='' && allTrue(matched,keys)) {
-				// @TODO need to create hasParentID method
-				matched.x_or_hasparent=false;
-				let test = await this.hasParentID(node.id,command_requires['x_or_hasparent']);
-				if (test) {
+				this.debug_time({ id:`${key} x_or_hasparent` });
+				//matched.x_or_hasparent=false;
+				matched.x_or_hasparent = await this.hasParentID(node.id,command_requires['x_or_hasparent']);
+				/*if (test==true) {
 					matched.x_or_hasparent=true;
-				}
+				}*/
+				this.debug_timeEnd({ id:`${key} x_or_hasparent` });
 			}
-			this.debug_timeEnd({ id:`${key} x_or_hasparent` });
 			// test 9: x_all_hasparent (currently mockup logic)
-			this.debug_time({ id:`${key} x_all_hasparent` });
 			if (command_requires['x_all_hasparent']!='' && allTrue(matched,keys)) {
+				this.debug_time({ id:`${key} x_all_hasparent` });
 				// @TODO need to create hasParentID method
 				for (let key of command_requires['x_all_hasparent'].split(',')) {
-					let test = await this.hasParentID(node.id,key);
-					if (!test) {
-						matched.x_all_hasparent=false;
-						break;
-					}
+					matched.x_all_hasparent = await this.hasParentID(node.id,key);
+					if (!matched.x_all_hasparent) break;
 				}
+				this.debug_timeEnd({ id:`${key} x_all_hasparent` });
 			}
-			this.debug_timeEnd({ id:`${key} x_all_hasparent` });
+			
 			// test 10: x_or_isparent (currently mockup logic)
 			this.debug_time({ id:`${key} x_or_isparent` });
 			if (command_requires['x_or_isparent']!='' && allTrue(matched,keys)) {
-				matched.x_or_isparent=false;
+				let is_direct=false;
 				for (let key of command_requires['x_or_isparent'].split(',')) {
-					let test = await this.isExactParentID(node.id,key);
-					if (!test) {
-						matched.x_or_isparent=true;
-						break;
-					}	
+					is_direct = await this.isExactParentID(node.id,key);
+					if (is_direct==true) break;
 				}
+				matched.x_or_isparent=is_direct;
 			}
 			this.debug_timeEnd({ id:`${key} x_or_isparent` });
 			// ***************************
@@ -494,8 +494,10 @@ export default class concepto {
 					break;
 				}
 			}
-			//console.log(`${node.text}: ${key} command_requires`,command_requires);
-			//console.log(`${node.text}: matched`,matched);
+			/*if (node.id=='ID_340889188') {
+			console.log(`${node.text}: ${key} command_requires`,command_requires);
+			console.log(`${node.text}: matched`,matched);
+			}*/
 			//await setImmediatePromise();
 		}
 		// sort by priority
@@ -544,7 +546,7 @@ export default class concepto {
 		if (commands_.length==0) {
 			this.debug({ message:'findValidCommand: no command found.', color:'red' });
 		} else if (commands_.length==1) {
-			reply = commands_[0];
+			reply = {...commands_[0]};
 			// try executing the node on the found commands_
 			try {
 				let test = await this.x_commands[reply.x_id].func(node,x_command_shared_state);
@@ -602,7 +604,7 @@ export default class concepto {
 	* This method traverses the dsl parsed tree, finds/execute x_commands and generated code as files.
 	* @return 	{Object}
 	*/
-		async process() {
+	async process() {
 		if (!this.x_flags.init_ok) throw new Error('error! the first called method must be init()!');
 		this.debug_time({ id:'process/writer' }); let tmp = {}, resp = { nodes:[] };
 		// read nodes
@@ -624,7 +626,7 @@ export default class concepto {
 			// request creation of files
 			await this.onCreateFiles(resp.nodes);
 			this.x_console.title({ title:`Interpreter ${this.x_config.class} ENDED. Full Compilation took: ${this.secsPassed_()} secs`, color:'green' });
-			this.debug_table('Amount of Time Per Method');
+			this.debug_table('Amount of Time Per Command');
 		} else {
 			// errors occurred
 		}
@@ -639,7 +641,7 @@ export default class concepto {
 	// improved in my imagination ...
 	async sub_process(source_resp,nodei,custom_state) {
 		let resp = {...source_resp};
-		if (resp.hasChildren) {
+		if (resp.hasChildren==true) {
 			let sub_nodes = await nodei.getNodes();
 			let new_state = {...custom_state};
 			for (let sublevel of sub_nodes) {
@@ -827,7 +829,7 @@ export default class concepto {
 					this.x_time_stats.times[filter_key] = new Date();
 					this.x_time_stats.tables[filter_key] = { command:filter_key, calls:0, average_call:0, total_ms:0 };
 				}
-			} else if (this.x_config.debug) {
+			} else if (this.x_config.debug==true) {
 				this.x_console.time({...arguments[0]});
 			}
 		}
@@ -855,7 +857,7 @@ export default class concepto {
 					this.x_time_stats.tables[filter_key].total_ms = timePassed;
 					this.x_time_stats.tables[filter_key].average_call = Math.round(this.x_time_stats.tables[filter_key].total_ms/this.x_time_stats.tables[filter_key].calls);
 				}
-			} else if (this.x_config.debug) {
+			} else if (this.x_config.debug==true) {
 				this.x_console.timeEnd({...{ color:'dim',prefix:'debug,dim' },...arguments[0]});
 			}
 		}
@@ -892,7 +894,7 @@ export default class concepto {
 			let node = await this.dsl_parser.getNode({ id:q, recurse:false });
 			let command = await findValidCommand(node);
 			brother_x_ids.push(command.x_id);
-			if (brother_x_ids.includes(x_id)) return true;
+			if (brother_x_ids.includes(x_id)==true) return true;
 		}
 		//resp = (brother_x_ids.includes(x_id));
 		return resp;
@@ -978,7 +980,7 @@ export default class concepto {
 				resp.push(command.x_id);
 			}
 		}
-		if (array) return resp;
+		if (array && array==true) return resp;
 		return resp.join(',');
 	}
 
@@ -1071,7 +1073,7 @@ function hasMethod (obj, name) {
 function setObjectKeys(obj,value) {
 	let resp=obj;
 	if (typeof resp === 'string') {
-		resp = {}
+		resp = {};
 		let keys=obj.split(',');
 		for (let i in keys) {
 			resp[keys[i]]=value;
