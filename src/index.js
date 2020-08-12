@@ -453,33 +453,32 @@ export default class concepto {
 				this.debug_time({ id:`${key} x_or_hasparent` });
 				//matched.x_or_hasparent=false;
 				matched.x_or_hasparent = await this.hasParentID(node.id,command_requires['x_or_hasparent']);
-				/*if (test==true) {
-					matched.x_or_hasparent=true;
-				}*/
 				this.debug_timeEnd({ id:`${key} x_or_hasparent` });
 			}
 			// test 9: x_all_hasparent (currently mockup logic)
 			if (command_requires['x_all_hasparent']!='' && allTrue(matched,keys)) {
 				this.debug_time({ id:`${key} x_all_hasparent` });
-				// @TODO need to create hasParentID method
-				for (let key of command_requires['x_all_hasparent'].split(',')) {
-					matched.x_all_hasparent = await this.hasParentID(node.id,key);
+				// @TODO double-check this improved version is working 11-Ago-20
+				matched.x_all_hasparent = await this.hasParentID(node.id,command_requires['x_all_hasparent'],true);
+				/*for (let key of command_requires['x_all_hasparent'].split(',')) {
+					matched.x_all_hasparent = await this.hasParentID(node.id,key,true);
 					if (!matched.x_all_hasparent) break;
-				}
+				}*/
 				this.debug_timeEnd({ id:`${key} x_all_hasparent` });
 			}
 			
 			// test 10: x_or_isparent (currently mockup logic)
-			this.debug_time({ id:`${key} x_or_isparent` });
 			if (command_requires['x_or_isparent']!='' && allTrue(matched,keys)) {
+				this.debug_time({ id:`${key} x_or_isparent` });
 				let is_direct=false;
 				for (let key of command_requires['x_or_isparent'].split(',')) {
 					is_direct = await this.isExactParentID(node.id,key);
 					if (is_direct==true) break;
 				}
 				matched.x_or_isparent=is_direct;
+				this.debug_timeEnd({ id:`${key} x_or_isparent` });
 			}
-			this.debug_timeEnd({ id:`${key} x_or_isparent` });
+			
 			// ***************************
 			// if we passed all tests ... 
 			// ***************************
@@ -560,7 +559,7 @@ export default class concepto {
 				reply.error = true;
 				reply.valid = false;
 				reply.catch = test_err;
-				// @TODO we should throw an error, so our parents catch it (9-AGO-20)
+				//throw new Error(test_err); // @TODO we should throw an error, so our parents catch it (9-AGO-20)
 			}
 		} else {
 			// more than one command found
@@ -608,8 +607,12 @@ export default class concepto {
 		if (!this.x_flags.init_ok) throw new Error('error! the first called method must be init()!');
 		this.debug_time({ id:'process/writer' }); let tmp = {}, resp = { nodes:[] };
 		// read nodes
-		this.x_console.outT({ prefix:'process,yellow', message:`parsing raw nodes ..`, color:'cyan' });
+		this.x_console.outT({ prefix:'process,yellow', message:`processing nodes ..`, color:'cyan' });
 		let x_dsl_nodes = await this.dsl_parser.getNodes({ level:2, nodes_raw:true });	
+		this.debug('calling onPrepare');
+		this.debug_time({ id:'onPrepare' });
+		await this.onPrepare();
+		this.debug_timeEnd({ id:'onPrepare' });
 		// 
 		for (let level2 of x_dsl_nodes) {
 			//this.debug('node',node);
@@ -621,14 +624,24 @@ export default class concepto {
 		// @TODO enable when not debugging
 		//await Promise.all(resp.nodes);
 		this.debug_timeEnd({ id:'process/writer' });
+		// check if there was some error
+		let were_errors = false;
+		resp.nodes.map(function(x) {
+			if (x.error==true) {
+				were_errors=true;
+				return false;
+			}
+		});
 		// if there was no error
-		if (!resp.error) {
+		if (!were_errors) {
 			// request creation of files
 			await this.onCreateFiles(resp.nodes);
-			this.x_console.title({ title:`Interpreter ${this.x_config.class} ENDED. Full Compilation took: ${this.secsPassed_()} secs`, color:'green' });
+			this.x_console.title({ title:`Interpreter ${this.x_config.class.toUpperCase()} ENDED. Full Compilation took: ${this.secsPassed_()} secs`, color:'green' });
 			this.debug_table('Amount of Time Per Command');
 		} else {
 			// errors occurred
+			this.x_console.title({ title:`Interpreter ${this.x_config.class.toUpperCase()} ENDED with ERRORS.\nPlease check your console history.\nCompilation took: ${this.secsPassed_()} secs`, color:'red' });	
+			//this.debug_table('Amount of Time Per Command');
 		}
 		// some debug
 		this.debug('after nodes processing, resp says:',resp);
@@ -657,6 +670,11 @@ export default class concepto {
 					if (!resp.x_ids) resp.x_ids=[]; resp.x_ids.push(real2.x_id);
 					resp = await this.sub_process(resp,sublevel,new_state);
 					resp.code += real2.exec.close;
+				} else if (real2.error==true) {
+					this.x_console.outT({ message:`error: Executing func x_command:${real2.x_id} for node: id:${real.id}, level ${real.level}, text: ${real.text}.`, data:{ id:real.id, level:real.level, text:real.text, data:real2.catch, x_command_state:new_state }});
+					await this.onErrors([`Error executing func for x_command:${real2.x_id} for node id ${real.id}, text: ${real.text} `]);
+					resp.valid=false, resp.hasChildren=false, resp.error=true;
+					break;
 				}
 			}
 		}
@@ -674,13 +692,13 @@ export default class concepto {
 			attributes: node.attributes,
 			code: '',
 			open: '',
-			close: '',
+			close: '', 
 			x_ids: [],
 			subnodes: node.nodes_raw.length
 		};
 		this.x_console.outT({ prefix:'process,yellow', message:`processing node ${node.text} ..`, color:'yellow' });
 		//
-		try {
+		//try {
 			//console.log('process_main->findValidCommand node:'+node.text);
 			let test = await this.findValidCommand({ node:node,object:false,x_command_shared_state:custom_state });
 			//this.debug(`test para node: text:${node.text}`,test);
@@ -695,8 +713,12 @@ export default class concepto {
 				}
 				resp.code += resp.close;
 				resp.x_ids = resp.x_ids.join(',');
+			} else if (test.error==true) {
+				this.x_console.outT({ message:`error: Executing func x_command:${test.x_id} for node: id:${node.id}, level ${node.level}, text: ${node.text}.`, data:{ id:node.id, level:node.level, text:node.text, catch:test.catch, x_command_state:test.state }});
+				await this.onErrors([`Error executing func for x_command:${test.x_id} for node id ${node.id}, text: ${node.text} `]);
+				resp.valid=false, resp.hasChildren=false, resp.error=true;
 			} else {
-				this.x_console.outT({ message:'error: FATAL, no method found for node processing.', data:{ id:node.id, level:node.level, text:node.text} });
+				this.x_console.outT({ message:'error: FATAL, no method found for node processing.', data:{ id:node.id, level:node.level, text:node.text } });
 				await this.onErrors([`No method found for given node id ${node.id}, text: ${node.text} `]);
 				resp.valid=false, resp.hasChildren=false, resp.error=true;
 			}
@@ -704,12 +726,12 @@ export default class concepto {
 			resp = await this.onAfterProcess(resp);
 			resp = await this.onCompleteCodeTemplate(resp);
 			//
-		} catch(err) {
+		/*} catch(err) {
 			// @TODO currently findValidCommand doesn't throw an error when an error is found.
 			this.x_console.outT({ message:`error: Executing func x_command for node: id:${node.id}, level ${node.level}, text: ${node.text}.`, data:{ id:node.id, level:node.level, text:node.text, error:err }});
 			await this.onErrors([`Error executing func for x_command for node id ${node.id}, text: ${node.text} `]);
 			resp.valid=false, resp.hasChildren=false, resp.error=true;
-		}
+		}*/
 		// return
 		return resp;
 	}
@@ -948,18 +970,22 @@ export default class concepto {
 	* @param 	{string}	x_id	- Command object x_id to test for
 	* @return 	{Boolean}
 	*/
-	async hasParentID(id=this.throwIfMissing('id'),x_id=this.throwIfMissing('x_id')) {
+	async hasParentID(id=this.throwIfMissing('id'),x_id=this.throwIfMissing('x_id'),onlyTrueIfAll=false) {
 		// @TODO test it after having 'real' commands on some parser 4-ago-20
 		let x_ids = x_id.split(',');
 		let parents = await this.dsl_parser.getParentNodesIDs({ id, array:true });
+		let allmatch = true;
 		for (let parent_id of parents) {
 			let node = await this.dsl_parser.getNode({ id:parent_id, recurse:false });
 			let command = await this.findValidCommand({ node, show_debug:false });
 			if (command && x_ids.includes(command.x_id)) {
-				return true;
+				if (!onlyTrueIfAll) return true;
+			} else {
+				allmatch = false;
 			}
 		}
-		return false;
+		if (!onlyTrueIfAll) return false;
+		return allmatch;
 	}
 
 	/**
