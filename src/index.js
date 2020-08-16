@@ -28,7 +28,7 @@
  * @property {string} bgcolor - Background color of node.
  * @property {string} link - Link defined on node.
  * @property {string} position - Position in relation of central node (left,right).
- * @property {Object[]} attributes - Array of objects with each attribute (key is attribute name, value is attribute value).
+ * @property {Object} attributes - Object with each attribute (key is attribute name, value is attribute value).
  * @property {string[]} icons - Array with icon names used in the node.
  * @property {date} date_modified - Date of node when it was last modified.
  * @property {date} date_created - Date of node when it was created.
