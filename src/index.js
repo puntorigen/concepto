@@ -448,14 +448,14 @@ export default class concepto {
 				matched.x_level=numberInCondition(node.level,command_requires['x_level']);	
 				this.debug_timeEnd({ id:`${key} x_level` });
 			}
-			// test 8: x_or_hasparent (currently mockup logic)
+			// test 8: x_or_hasparent
 			if (command_requires['x_or_hasparent']!='' && allTrue(matched,keys)) {
 				this.debug_time({ id:`${key} x_or_hasparent` });
 				//matched.x_or_hasparent=false;
 				matched.x_or_hasparent = await this.hasParentID(node.id,command_requires['x_or_hasparent']);
 				this.debug_timeEnd({ id:`${key} x_or_hasparent` });
 			}
-			// test 9: x_all_hasparent (currently mockup logic)
+			// test 9: x_all_hasparent
 			if (command_requires['x_all_hasparent']!='' && allTrue(matched,keys)) {
 				this.debug_time({ id:`${key} x_all_hasparent` });
 				// @TODO double-check this improved version is working 11-Ago-20
@@ -467,7 +467,7 @@ export default class concepto {
 				this.debug_timeEnd({ id:`${key} x_all_hasparent` });
 			}
 			
-			// test 10: x_or_isparent (currently mockup logic)
+			// test 10: x_or_isparent
 			if (command_requires['x_or_isparent']!='' && allTrue(matched,keys)) {
 				this.debug_time({ id:`${key} x_or_isparent` });
 				let is_direct=false;
@@ -493,7 +493,7 @@ export default class concepto {
 					break;
 				}
 			}
-			/*if (node.id=='ID_340889188') {
+			/*if (node.id=='ID_923953027') {
 			console.log(`${node.text}: ${key} command_requires`,command_requires);
 			console.log(`${node.text}: matched`,matched);
 			}*/
@@ -644,7 +644,7 @@ export default class concepto {
 			//this.debug_table('Amount of Time Per Command');
 		}
 		// some debug
-		this.debug('after nodes processing, resp says:',resp);
+		//this.debug('after nodes processing, resp says:',resp);
 		//this.debug('app state says:',this.x_state);
 		return resp;
 	}
@@ -916,7 +916,7 @@ export default class concepto {
 		let brother_x_ids = [], resp=false;
 		for (let q of brother_ids) {
 			let node = await this.dsl_parser.getNode({ id:q, recurse:false });
-			let command = await findValidCommand({ node:node, show_debug:false });
+			let command = await findValidCommand({ node:node, show_debug:false, object:true });
 			brother_x_ids.push(command.x_id);
 			if (brother_x_ids.includes(x_id)==true) return true;
 		}
@@ -956,7 +956,7 @@ export default class concepto {
 	async isExactParentID(id=this.throwIfMissing('id'),x_id=this.throwIfMissing('x_id')) {
 		// @TODO test it after having 'real' commands on some parser 4-ago-20
 		let parent_node = await this.dsl_parser.getParentNode({ id });
-		let parent_command = await this.findValidCommand({ node:parent_node, show_debug:false });
+		let parent_command = await this.findValidCommand({ node:parent_node, show_debug:false, object:true });
 		if (parent_command && parent_command.x_id == x_id) {
 			return true;
 		}
@@ -971,20 +971,32 @@ export default class concepto {
 	* @return 	{Boolean}
 	*/
 	async hasParentID(id=this.throwIfMissing('id'),x_id=this.throwIfMissing('x_id'),onlyTrueIfAll=false) {
-		// @TODO test it after having 'real' commands on some parser 4-ago-20
+		// @TODO test it after having 'real' commands on some parser aug-4-20, fixed on aug-15-20
 		let x_ids = x_id.split(',');
 		let parents = await this.dsl_parser.getParentNodesIDs({ id, array:true });
-		let allmatch = true;
+		let allmatch = true, tested_parents_x_ids=[];
 		for (let parent_id of parents) {
 			let node = await this.dsl_parser.getNode({ id:parent_id, recurse:false });
-			let command = await this.findValidCommand({ node, show_debug:false });
-			if (command && x_ids.includes(command.x_id)) {
-				if (!onlyTrueIfAll) return true;
-			} else {
-				allmatch = false;
+			let parentCommand = await this.findValidCommand({ node, show_debug:false, object:true });
+			if (onlyTrueIfAll==false && x_ids.includes(parentCommand.x_id)) {
+				return true;
+			} else if (onlyTrueIfAll==false) {
+				//return false;
+			} else if (onlyTrueIfAll==true) {
+				// onlyTrueIfAll==true
+				tested_parents_x_ids.push(parentCommand.x_id);
+				if (this.array_intersect(tested_parents_x_ids,x_ids).length==x_ids.length) {
+					return true;
+				}
 			}
 		}
-		if (!onlyTrueIfAll) return false;
+		// test again if we are here
+		if (this.array_intersect(tested_parents_x_ids,x_ids).length==x_ids.length) {
+			return true;
+		} else {
+			return false;
+		}
+		//if (!onlyTrueIfAll) return false;
 		return allmatch;
 	}
 
