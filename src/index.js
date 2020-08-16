@@ -181,13 +181,20 @@ export default class concepto {
 	* @return 	{String}
 	*/
 	async onDefineTitle(node) {
-		let resp = node.text, i;
+		let resp = node.text;
+		Object.keys(node.attributes).map(function(i){
+			if (i=='title' || i=='titulo') {
+				resp = node.attributes[i];
+				return false;
+			}
+		}.bind(this));
+		/*
 		for (i in node.attributes) {
 			if (node.attributes[i]=='title' || node.attributes[i]=='titulo') {
 				resp = node.attributes[i];
 				break;
 			}
-		}
+		}*/
 		return resp;
 	}
 
