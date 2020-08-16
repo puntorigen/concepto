@@ -363,22 +363,17 @@ export default class concepto {
 							break;
 						}
 					} else if (test.indexOf('[')!=-1) {
-						// array type definition: ex. attributes[value1,value2..] (attributes was an array type)
+						// array type definition: ex. attributes[value1,value2..] (attributes is an array type)
 						// it must exist value1,value2,.. within array attributes of objects to be true
 						let array_key = test.split('[')[0];
 						let keys = this.dsl_parser.findVariables({ text:test, symbol:'[', symbol_closing:']' }).split('+');
 						let has_keys = [];
-						if (array_key!='attributes' && node[array_key]) {
+						if (node[array_key]) {
 							for(let obj of node[array_key]) {
 								Object.keys(obj).filter(function(x) {
 									has_keys.push(x)
 								});
 							}
-						} else if (array_key=='attributes') {
-							// attributes is now an object
-							Object.keys(node.attributes).map(function(key) {
-								has_keys.push(key);
-							});
 						}
 						if (this.array_intersect(has_keys,keys).length!=keys.length) {
 							matched.x_not_empty=false;
