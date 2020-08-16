@@ -368,12 +368,16 @@ export default class concepto {
 						let array_key = test.split('[')[0];
 						let keys = this.dsl_parser.findVariables({ text:test, symbol:'[', symbol_closing:']' }).split('+');
 						let has_keys = [];
-						if (node[array_key]) {
+						if (array_key!='attributes' && node[array_key]) {
 							for(let obj of node[array_key]) {
 								Object.keys(obj).filter(function(x) {
 									has_keys.push(x)
 								});
 							}
+						} else if (array_key=='attributes') {
+							Object.keys(node.attributes).filter(function(x) {
+								has_keys.push(x)
+							});
 						}
 						if (this.array_intersect(has_keys,keys).length!=keys.length) {
 							matched.x_not_empty=false;
