@@ -1,6 +1,6 @@
 {
   "name": "concepto",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Punto Origen - ES6 Concepto Class Interface",
   "keywords": [
     "creador",
@@ -37,7 +37,7 @@
     "@rollup/plugin-node-resolve": "^8.4.0",
     "cross-env": "^7.0.2",
     "jsdoc-to-markdown": "^6.0.1",
-    "rollup": "^2.26.0"
+    "rollup": "^2.26.3"
   },
   "scarfSettings": {
     "enabled": false

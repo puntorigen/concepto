@@ -61,6 +61,13 @@ export default class concepto {
 		this.x_commands={}; 	//this.commands();
 		this.x_time_stats={ times:{}, tables:{} };
 		this.x_state={};	// for dsl parser to share variables within commands and onMethods.
+		this.x_memory_cache={
+			findCommand: {},
+			findValidCommand: {},
+			isExactParentID: {},
+			hasBrotherBefore: {},
+			hasBrotherNext: {},
+		};
 		// grab class methods that start with the 'on' prefix
 		/* @TODO check if this is useful or needed 1-Aug-2020
 		this.x_on_methods={};
@@ -304,237 +311,246 @@ export default class concepto {
 	async findCommand({node=this.throwIfMissing('node'),justone=true, show_debug=true}={}) {
 		if (!this.x_flags.init_ok) throw new Error('error! the first called method must be init()!');
 		let resp = {...this.reply_template(),...{ id:'not_found', hint:'failover command'}}, xtest = [];
-		let keys = 'x_icons,x_not_icons,x_not_empty,x_not_text_contains,x_empty,x_text_starts,x_text_contains,x_level,x_or_hasparent,x_all_hasparent,x_or_isparent';
-		let command_requires1 = setObjectKeys(keys,'');
-		let node_features = {...command_requires1}; 
-		let command_defaults = {...command_requires1};
-		let def_matched = setObjectKeys(keys,true), comm;
-		if (show_debug) this.debug(`findCommand for node ID ${node.id}`);
-		// iterate through commands
-		for (let key in this.x_commands) {
-			//let comm_keys = Object.keys(this.x_commands[key]);
-			// reset defaults for current command
-			let matched = {...def_matched};
-			// build template for used keys
-			let command_requires = {...command_defaults,...this.x_commands[key]};
-			delete command_requires.func;
-			// test command features vs node features
-			// test 1: icon match
-			
-			//if (this.x_config.debug) this.x_console.time({ id:`${key} x_icons` });
-			if (command_requires['x_icons']!='') {
-				this.debug_time({ id:`${key} x_icons` });
-				for (let qi of command_requires.x_icons.split(',')) {
-					matched.x_icons = (node.icons.includes(qi))?true:false;
-					if (!matched.x_icons) break;
-					//await setImmediatePromise();
+		if (typeof node.icons === 'undefined') {
+			if (show_debug) this.debug('error: findCommand was given a blank node!');
+			return resp;
+		}
+		if (node.id in this.x_memory_cache.findCommand) {
+			if (show_debug) this.debug(`using memory_cache for findCommand for node ID ${node.id}`);
+			return this.x_memory_cache.findCommand[node.id];
+		} else {
+			if (show_debug) this.debug(`findCommand for node ID ${node.id}`);
+			let keys = 'x_icons,x_not_icons,x_not_empty,x_not_text_contains,x_empty,x_text_starts,x_text_contains,x_level,x_or_hasparent,x_all_hasparent,x_or_isparent';
+			let command_requires1 = setObjectKeys(keys,'');
+			let node_features = {...command_requires1}; 
+			let command_defaults = {...command_requires1};
+			let def_matched = setObjectKeys(keys,true), comm;
+			// iterate through commands
+			for (let key in this.x_commands) {
+				//let comm_keys = Object.keys(this.x_commands[key]);
+				// reset defaults for current command
+				let matched = {...def_matched};
+				// build template for used keys
+				let command_requires = {...command_defaults,...this.x_commands[key]};
+				delete command_requires.func;
+				// test command features vs node features
+				// test 1: icon match
+				
+				//if (this.x_config.debug) this.x_console.time({ id:`${key} x_icons` });
+				if (command_requires['x_icons']!='') {
+					this.debug_time({ id:`${key} x_icons` });
+					for (let qi of command_requires.x_icons.split(',')) {
+						matched.x_icons = (node.icons.includes(qi))?true:false;
+						if (!matched.x_icons) break;
+						await setImmediatePromise();
+					}
+					this.debug_timeEnd({ id:`${key} x_icons` });
+				}			
+				//if (this.x_config.debug) this.x_console.timeEnd({ id:`${key} x_icons` });
+				// test 2: x_not_icons
+				if (command_requires['x_not_icons']!='' && allTrue(matched,keys)) {
+					this.debug_time({ id:`${key} x_not_icons` });
+					// special case first
+					if (node.icons.length>0 && command_requires['x_not_icons']!='' && ['*'].includes(command_requires['x_not_icons'])) {
+						matched.x_not_icons = false;
+					} else if (command_requires['x_not_icons']!='') {
+						// if node has any icons of the x_not_icons, return false aka intersect values, and if any assign false.
+						matched.x_not_icons = (this.array_intersect(command_requires['x_not_icons'].split(','), node.icons).length>0)?false:true;
+					}
+					this.debug_timeEnd({ id:`${key} x_not_icons` });
 				}
-				this.debug_timeEnd({ id:`${key} x_icons` });
-			}			
-			//if (this.x_config.debug) this.x_console.timeEnd({ id:`${key} x_icons` });
-			// test 2: x_not_icons
-			if (command_requires['x_not_icons']!='' && allTrue(matched,keys)) {
-				this.debug_time({ id:`${key} x_not_icons` });
-				// special case first
-				if (node.icons.length>0 && command_requires['x_not_icons']!='' && ['*'].includes(command_requires['x_not_icons'])) {
-					matched.x_not_icons = false;
-				} else if (command_requires['x_not_icons']!='') {
-					// if node has any icons of the x_not_icons, return false aka intersect values, and if any assign false.
-					matched.x_not_icons = (this.array_intersect(command_requires['x_not_icons'].split(','), node.icons).length>0)?false:true;
-				}
-				this.debug_timeEnd({ id:`${key} x_not_icons` });
-			}
-			// test 3: x_not_empty. example: attributes[event,name] aka key[value1||value2] in node
-			// supports multiple requirements using + as delimiter "attributes[event,name]+color"
-			if (command_requires['x_not_empty']!='' && allTrue(matched,keys)) {
-				this.debug_time({ id:`${key} x_not_empty` });
-				//this.debug(`test x_not_empty: ${command_requires['x_not_empty']}`);
-				// transform x_not_empty value => ex. attributes[event,name]+color => attributes[event+name],color in com_reqs
-				let com_reqs=command_requires['x_not_empty'].replace(/\+/g,'/').replace(/\,/g,'+').replace(/\//g,',').split(',');
-				//this.debug(':transformed x_not_empty',com_reqs.join(','));
-				for(let test of com_reqs) {
-					// start tests
-					if(test.indexOf('.')!=-1) {
-						// struct type definition: ex. cloud.bgcolor (if exists, it must not be empty, or false if doesnt exist)
-						let testpath = getVal(node,test);
-						if (typeof testpath === 'string' && testpath=='' ||
-							typeof testpath === 'boolean' && testpath==false) {
-							matched.x_not_empty=false;
-							break;
-						}
-					} else if (test.indexOf('[')!=-1) {
-						// array type definition: ex. attributes[value1,value2..] (attributes is an array type)
-						// it must exist value1,value2,.. within array attributes of objects to be true
-						let array_key = test.split('[')[0];
-						let keys = this.dsl_parser.findVariables({ text:test, symbol:'[', symbol_closing:']' }).split('+');
-						let has_keys = [];
-						if (array_key!='attributes' && node[array_key]) {
-							for(let obj of node[array_key]) {
-								Object.keys(obj).filter(function(x) {
+				// test 3: x_not_empty. example: attributes[event,name] aka key[value1||value2] in node
+				// supports multiple requirements using + as delimiter "attributes[event,name]+color"
+				if (command_requires['x_not_empty']!='' && allTrue(matched,keys)) {
+					this.debug_time({ id:`${key} x_not_empty` });
+					//this.debug(`test x_not_empty: ${command_requires['x_not_empty']}`);
+					// transform x_not_empty value => ex. attributes[event,name]+color => attributes[event+name],color in com_reqs
+					let com_reqs=command_requires['x_not_empty'].replace(/\+/g,'/').replace(/\,/g,'+').replace(/\//g,',').split(',');
+					//this.debug(':transformed x_not_empty',com_reqs.join(','));
+					for(let test of com_reqs) {
+						// start tests
+						if(test.indexOf('.')!=-1) {
+							// struct type definition: ex. cloud.bgcolor (if exists, it must not be empty, or false if doesnt exist)
+							let testpath = getVal(node,test);
+							if (typeof testpath === 'string' && testpath=='' ||
+								typeof testpath === 'boolean' && testpath==false) {
+								matched.x_not_empty=false;
+								break;
+							}
+						} else if (test.indexOf('[')!=-1) {
+							// array type definition: ex. attributes[value1,value2..] (attributes is an array type)
+							// it must exist value1,value2,.. within array attributes of objects to be true
+							let array_key = test.split('[')[0];
+							let keys = this.dsl_parser.findVariables({ text:test, symbol:'[', symbol_closing:']' }).split('+');
+							let has_keys = [];
+							if (array_key!='attributes' && node[array_key]) {
+								for(let obj of node[array_key]) {
+									Object.keys(obj).filter(function(x) {
+										has_keys.push(x)
+									});
+								}
+							} else if (array_key=='attributes') {
+								Object.keys(node.attributes).filter(function(x) {
 									has_keys.push(x)
 								});
 							}
-						} else if (array_key=='attributes') {
-							Object.keys(node.attributes).filter(function(x) {
-								has_keys.push(x)
-							});
+							if (this.array_intersect(has_keys,keys).length!=keys.length) {
+								matched.x_not_empty=false;
+							}
+						} else {
+							// single attribute
+							if (test in node && typeof node[test] === 'string' && node[test]=='') {
+								matched.x_not_empty=false;
+							} else if (test in node && typeof node[test] === 'boolean' && node[test]==false) {
+								matched.x_not_empty=false;
+							} else if (typeof node[test] === 'undefined') {
+								matched.x_not_empty=false;
+							}
 						}
-						if (this.array_intersect(has_keys,keys).length!=keys.length) {
-							matched.x_not_empty=false;
-						}
-					} else {
-						// single attribute
-						if (test in node && typeof node[test] === 'string' && node[test]=='') {
-							matched.x_not_empty=false;
-						} else if (test in node && typeof node[test] === 'boolean' && node[test]==false) {
-							matched.x_not_empty=false;
-						} else if (typeof node[test] === 'undefined') {
-							matched.x_not_empty=false;
-						}
+						await setImmediatePromise();
 					}
+					this.debug_timeEnd({ id:`${key} x_not_empty` });
 				}
-				this.debug_timeEnd({ id:`${key} x_not_empty` });
-			}
-			// test 4: x_not_text_contains
-			// can have multiple values.. ex: margen,arriba
-			if (command_requires['x_not_text_contains']!='' && allTrue(matched,keys)) {
-				this.debug_time({ id:`${key} x_not_text_contains` });
-				for (let word of command_requires['x_not_text_contains'].split(',')) {
-					if (node.text.indexOf(word)!=-1) {
-						matched.x_not_text_contains=false;
-						break;
-					}
-				}
-				this.debug_timeEnd({ id:`${key} x_not_text_contains` });
-			}
-			// test 5: x_empty (node keys that must be empty (undefined also means not empty))
-			if (command_requires['x_empty']!='' && allTrue(matched,keys)) {
-				this.debug_time({ id:`${key} x_empty` });
-				for (let key of command_requires['x_empty'].split(',')) {
-					let testpath = getVal(node,key);
-					if (typeof testpath === 'string' && testpath!='') {
-						matched.x_empty=false;
-						break;
-					} else if (typeof testpath === 'object' && testpath.length>0) {
-						matched.x_empty=false;
-						break;
-					} else if (typeof testpath === 'undefined') {
-						matched.x_empty=false;
-						break;
-					}
-				}
-				this.debug_timeEnd({ id:`${key} x_empty` });
-			}
-			// test 6: x_text_contains
-			if (allTrue(matched,keys) && command_requires['x_text_contains']!='') {
-				this.debug_time({ id:`${key} x_text_contains` });
-				// @TODO here we are
-				if (command_requires['x_text_contains'].indexOf('|')!=-1) {
-					// 'or' delimiter
-					let n_match=false;
-					for (let key of command_requires['x_text_contains'].split('|')) {
-						if (node.text.indexOf(key)!=-1) {
-							n_match=true;
+				// test 4: x_not_text_contains
+				// can have multiple values.. ex: margen,arriba
+				if (command_requires['x_not_text_contains']!='' && allTrue(matched,keys)) {
+					this.debug_time({ id:`${key} x_not_text_contains` });
+					for (let word of command_requires['x_not_text_contains'].split(',')) {
+						if (node.text.indexOf(word)!=-1) {
+							matched.x_not_text_contains=false;
 							break;
 						}
+						await setImmediatePromise();
 					}
-					matched.x_text_contains=n_match;
+					this.debug_timeEnd({ id:`${key} x_not_text_contains` });
+				}
+				// test 5: x_empty (node keys that must be empty (undefined also means not empty))
+				if (command_requires['x_empty']!='' && allTrue(matched,keys)) {
+					this.debug_time({ id:`${key} x_empty` });
+					for (let key of command_requires['x_empty'].split(',')) {
+						let testpath = getVal(node,key);
+						if (typeof testpath === 'string' && testpath!='') {
+							matched.x_empty=false;
+							break;
+						} else if (typeof testpath === 'object' && testpath.length>0) {
+							matched.x_empty=false;
+							break;
+						} else if (typeof testpath === 'undefined') {
+							matched.x_empty=false;
+							break;
+						}
+						await setImmediatePromise();
+					}
+					this.debug_timeEnd({ id:`${key} x_empty` });
+				}
+				// test 6: x_text_contains
+				if (allTrue(matched,keys) && command_requires['x_text_contains']!='') {
+					this.debug_time({ id:`${key} x_text_contains` });
+					// @TODO here we are
+					if (command_requires['x_text_contains'].indexOf('|')!=-1) {
+						// 'or' delimiter
+						let n_match=false;
+						for (let key of command_requires['x_text_contains'].split('|')) {
+							if (node.text.indexOf(key)!=-1) {
+								n_match=true;
+								break;
+							}
+						}
+						matched.x_text_contains=n_match;
 
-				} else if (command_requires['x_text_contains'].indexOf(',')!=-1) {
-					// 'and' delimiter
-					for (let key of command_requires['x_text_contains'].split(',')) {
-						if (node.text.indexOf(key)==-1) {
-							matched.x_text_contains=false;
-							break;
+					} else if (command_requires['x_text_contains'].indexOf(',')!=-1) {
+						// 'and' delimiter
+						for (let key of command_requires['x_text_contains'].split(',')) {
+							if (node.text.indexOf(key)==-1) {
+								matched.x_text_contains=false;
+								break;
+							}
 						}
+					} else if (node.text.toLowerCase().indexOf(command_requires['x_text_contains'].toLowerCase())==-1) {
+						matched.x_text_contains=false;
 					}
-				} else if (node.text.toLowerCase().indexOf(command_requires['x_text_contains'].toLowerCase())==-1) {
-					matched.x_text_contains=false;
+					this.debug_timeEnd({ id:`${key} x_text_contains` });
 				}
-				this.debug_timeEnd({ id:`${key} x_text_contains` });
-			}
-			// test 7: x_level - example: '2,3,4' (any) or '>2,<7' (all)
-			if (command_requires['x_level']!='' && allTrue(matched,keys)) {
-				this.debug_time({ id:`${key} x_level` });
-				matched.x_level=numberInCondition(node.level,command_requires['x_level']);	
-				this.debug_timeEnd({ id:`${key} x_level` });
-			}
-			// test 8: x_or_hasparent
-			if (command_requires['x_or_hasparent']!='' && allTrue(matched,keys)) {
-				this.debug_time({ id:`${key} x_or_hasparent` });
-				//matched.x_or_hasparent=false;
-				matched.x_or_hasparent = await this.hasParentID(node.id,command_requires['x_or_hasparent']);
-				this.debug_timeEnd({ id:`${key} x_or_hasparent` });
-			}
-			// test 9: x_all_hasparent
-			if (command_requires['x_all_hasparent']!='' && allTrue(matched,keys)) {
-				this.debug_time({ id:`${key} x_all_hasparent` });
-				// @TODO double-check this improved version is working 11-Ago-20
-				matched.x_all_hasparent = await this.hasParentID(node.id,command_requires['x_all_hasparent'],true);
-				/*for (let key of command_requires['x_all_hasparent'].split(',')) {
-					matched.x_all_hasparent = await this.hasParentID(node.id,key,true);
-					if (!matched.x_all_hasparent) break;
+				// test 7: x_level - example: '2,3,4' (any) or '>2,<7' (all)
+				if (command_requires['x_level']!='' && allTrue(matched,keys)) {
+					this.debug_time({ id:`${key} x_level` });
+					matched.x_level=numberInCondition(node.level,command_requires['x_level']);	
+					this.debug_timeEnd({ id:`${key} x_level` });
+				}
+				// test 8: x_or_hasparent
+				if (command_requires['x_or_hasparent']!='' && allTrue(matched,keys)) {
+					this.debug_time({ id:`${key} x_or_hasparent` });
+					//matched.x_or_hasparent=false;
+					matched.x_or_hasparent = await this.hasParentID(node.id,command_requires['x_or_hasparent']);
+					this.debug_timeEnd({ id:`${key} x_or_hasparent` });
+				}
+				// test 9: x_all_hasparent
+				if (command_requires['x_all_hasparent']!='' && allTrue(matched,keys)) {
+					this.debug_time({ id:`${key} x_all_hasparent` });
+					matched.x_all_hasparent = await this.hasParentID(node.id,command_requires['x_all_hasparent'],true);
+					this.debug_timeEnd({ id:`${key} x_all_hasparent` });
+				}
+				
+				// test 10: x_or_isparent
+				if (command_requires['x_or_isparent']!='' && allTrue(matched,keys)) {
+					this.debug_time({ id:`${key} x_or_isparent` });
+					let is_direct=false;
+					for (let key of command_requires['x_or_isparent'].split(',')) {
+						is_direct = await this.isExactParentID(node.id,key);
+						if (is_direct==true) break;
+						await setImmediatePromise();
+					}
+					matched.x_or_isparent=is_direct;
+					this.debug_timeEnd({ id:`${key} x_or_isparent` });
+				}
+				
+				// ***************************
+				// if we passed all tests ... 
+				// ***************************
+				if (allTrue(matched,keys)) {
+					// count num of defined requires on matched command (more is more exact match, aka priority)
+					let count = Object.entries(command_requires).reduce((n, x) => n + (x[1] != ''), 0);
+					// assign resp
+					resp = {...{x_priority:-1},...this.x_commands[key],...{x_id:key, priority:count}};
+					if (!justone) {
+						xtest.push(resp);
+					} else {
+						break;
+					}
+				}
+				/*if (node.id=='ID_923953027') {
+				console.log(`${node.text}: ${key} command_requires`,command_requires);
+				console.log(`${node.text}: matched`,matched);
 				}*/
-				this.debug_timeEnd({ id:`${key} x_all_hasparent` });
+				await setImmediatePromise();
 			}
-			
-			// test 10: x_or_isparent
-			if (command_requires['x_or_isparent']!='' && allTrue(matched,keys)) {
-				this.debug_time({ id:`${key} x_or_isparent` });
-				let is_direct=false;
-				for (let key of command_requires['x_or_isparent'].split(',')) {
-					is_direct = await this.isExactParentID(node.id,key);
-					if (is_direct==true) break;
-				}
-				matched.x_or_isparent=is_direct;
-				this.debug_timeEnd({ id:`${key} x_or_isparent` });
-			}
-			
-			// ***************************
-			// if we passed all tests ... 
-			// ***************************
-			if (allTrue(matched,keys)) {
-				// count num of defined requires on matched command (more is more exact match, aka priority)
-				let count = Object.entries(command_requires).reduce((n, x) => n + (x[1] != ''), 0);
-				// assign resp
-				resp = {...{x_priority:-1},...this.x_commands[key],...{x_id:key, priority:count}};
-				if (!justone) {
-					xtest.push(resp);
+			// sort by priority
+			if (show_debug) this.debug_time({ id:`sorting by priority` });
+			let sorted = xtest.sort(function(a,b) {
+				if (a.x_priority!=-1 && b.x_priority!=-1) {
+					// sort by x_priority
+					return b.x_priority-a.x_priority;
 				} else {
-					break;
+					// sort by priority (number of features)
+					return b.priority-a.priority;
 				}
-			}
-			/*if (node.id=='ID_923953027') {
-			console.log(`${node.text}: ${key} command_requires`,command_requires);
-			console.log(`${node.text}: matched`,matched);
-			}*/
-			//await setImmediatePromise();
-		}
-		// sort by priority
-		if (show_debug) this.debug_time({ id:`sorting by priority` });
-		let sorted = xtest.sort(function(a,b) {
-			if (a.x_priority!=-1 && b.x_priority!=-1) {
-				// sort by x_priority
-				return b.x_priority-a.x_priority;
-			} else {
-				// sort by priority (number of features)
-				return b.priority-a.priority;
-			}
-		});
-		if (show_debug) this.debug_timeEnd({ id:`sorting by priority` });
-		// reply
-		if (!justone) {
-			/*
-			// get just the ids
-			let sorted_ids = sorted.map(function(elem,value) {
-				return elem.id;	
 			});
-			*/
-			// return the array of commands, sorted by 'priority' key
-			resp=sorted;
+			if (show_debug) this.debug_timeEnd({ id:`sorting by priority` });
+			// reply
+			if (!justone) {
+				/*
+				// get just the ids
+				let sorted_ids = sorted.map(function(elem,value) {
+					return elem.id;	
+				});
+				*/
+				// return the array of commands, sorted by 'priority' key
+				resp=sorted;
+			}
+			//console.log(`findCommand resp`,resp);
+			this.x_memory_cache.findCommand[node.id] = resp;
+			return resp;
 		}
-		//console.log(`findCommand resp`,resp);
-		return resp;
 	}
 
 	/**
@@ -551,59 +567,65 @@ export default class concepto {
 	async findValidCommand({node=this.throwIfMissing('node'),object=false,x_command_shared_state={},show_debug=true}={}) {
 		if (!this.x_flags.init_ok) throw new Error('error! the first called method must be init()!');
 		if (show_debug) this.debug({ message:`findValidCommand called for node ${node.id}, level:${node.level}, text:${node.text}`, color:'yellow' });
-		let commands_ = await this.findCommand({node,justone:false,show_debug:show_debug}), reply={};
-		// @TODO debug and test
-		if (commands_.length==0) {
-			this.debug({ message:'findValidCommand: no command found.', color:'red' });
-		} else if (commands_.length==1) {
-			reply = {...commands_[0]};
-			// try executing the node on the found commands_
-			try {
-				let test = await this.x_commands[reply.x_id].func(node,x_command_shared_state);
-				reply.exec = test;
-				// @TODO test if _f4e is used; because its ugly
-				reply._f4e = commands_[0].x_id;
-				if (show_debug) this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[0].x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
-			} catch(test_err) {
-				if (show_debug) this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[0].x_id} ... ERROR! (nodeid:${node.id})`, color:'red' });
-				// @TODO emit('internal_error','findValidCommand')
-				reply.error = true;
-				reply.valid = false;
-				reply.catch = test_err;
-				//throw new Error(test_err); // @TODO we should throw an error, so our parents catch it (9-AGO-20)
-			}
+		if (node.id in this.x_memory_cache.findValidCommand) {
+			return this.x_memory_cache.findValidCommand[node.id];
 		} else {
-			// more than one command found
-			if (show_debug) this.debug({ message:`findValidCommand: ${commands_.length} commands found: (nodeid:${node.id})`, color:'green' });
-			// test each command
-			for (let qm_index in commands_) {
-				let qm = commands_[qm_index];
+			let reply={};
+			let commands_ = await this.findCommand({node,justone:false,show_debug:show_debug});
+			// @TODO debug and test
+			if (commands_.length==0) {
+				this.debug({ message:'findValidCommand: no command found.', color:'red' });
+			} else if (commands_.length==1) {
+				reply = {...commands_[0]};
+				// try executing the node on the found commands_
 				try {
-					let test = await this.x_commands[qm.x_id].func(node,x_command_shared_state);
-					if (test.valid) {
-						if (show_debug) this.debug({ message:`findValidCommand: ${parseInt(qm_index)+1}/${commands_.length} testing command ${qm.x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
-						if (show_debug) this.debug({ message:'---------------------', time:false });
-						if (object) {
-							reply=test;
-						} else {
-							// @TODO test if _f4e is used; because its ugly
-							reply=qm;
-							reply.exec=test;
-							reply._f4e=qm.x_id;
-						}
-						break;
-					}
-				} catch(test_err1) {
-					if (show_debug) this.debug({ message:`findValidCommand: error executing command ${qm} (nodeid:${node.id})`, data:test_err1, color:'red' });
+					let test = await this.x_commands[reply.x_id].func(node,x_command_shared_state);
+					reply.exec = test;
+					// @TODO test if _f4e is used; because its ugly
+					reply._f4e = commands_[0].x_id;
+					if (show_debug) this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[0].x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
+				} catch(test_err) {
+					if (show_debug) this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[0].x_id} ... ERROR! (nodeid:${node.id})`, color:'red' });
+					// @TODO emit('internal_error','findValidCommand')
 					reply.error = true;
 					reply.valid = false;
-					reply.catch = test_err1;
-					// @TODO we should throw an error, so our parents catch it (9-AGO-20) and break the loop
+					reply.catch = test_err;
+					//throw new Error(test_err); // @TODO we should throw an error, so our parents catch it (9-AGO-20)
+				}
+			} else {
+				// more than one command found
+				if (show_debug) this.debug({ message:`findValidCommand: ${commands_.length} commands found: (nodeid:${node.id})`, color:'green' });
+				// test each command
+				for (let qm_index in commands_) {
+					let qm = commands_[qm_index];
+					try {
+						let test = await this.x_commands[qm.x_id].func(node,x_command_shared_state);
+						if (test.valid) {
+							if (show_debug) this.debug({ message:`findValidCommand: ${parseInt(qm_index)+1}/${commands_.length} testing command ${qm.x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
+							if (show_debug) this.debug({ message:'---------------------', time:false });
+							if (object) {
+								reply=test;
+							} else {
+								// @TODO test if _f4e is used; because its ugly
+								reply=qm;
+								reply.exec=test;
+								reply._f4e=qm.x_id;
+							}
+							break;
+						}
+					} catch(test_err1) {
+						if (show_debug) this.debug({ message:`findValidCommand: error executing command ${qm} (nodeid:${node.id})`, data:test_err1, color:'red' });
+						reply.error = true;
+						reply.valid = false;
+						reply.catch = test_err1;
+						// @TODO we should throw an error, so our parents catch it (9-AGO-20) and break the loop
+					}
 				}
 			}
+			if (Object.keys(reply).length==0) reply=false;
+			this.x_memory_cache.findValidCommand[node.id] = reply;
+			return reply;
 		}
-		if (Object.keys(reply).length==0) reply=false;
-		return reply;
 	}
 
 	// ****************************
@@ -631,9 +653,10 @@ export default class concepto {
 			let main = await this.process_main(level2,{});
 			// append to resp
 			resp.nodes.push(main);
+			await setImmediatePromise();
 		}
 		// @TODO enable when not debugging
-		//await Promise.all(resp.nodes);
+		//resp.nodes = await Promise.all(resp.nodes);
 		this.debug_timeEnd({ id:'process/writer' });
 		// check if there was some error
 		let were_errors = false;
@@ -687,6 +710,7 @@ export default class concepto {
 					resp.valid=false, resp.hasChildren=false, resp.error=true;
 					break;
 				}
+				await setImmediatePromise();
 			}
 		}
 		return resp;
@@ -923,16 +947,21 @@ export default class concepto {
 	*/
 	async hasBrotherID(id=this.throwIfMissing('id'),x_id=this.throwIfMissing('x_id')) {
 		// @TODO test it after having 'real' commands on some parser 3-ago-20
-		let brother_ids = await this.dsl_parser.getBrotherNodesIDs({ id, before:true, after:true }).split(',');
-		let brother_x_ids = [], resp=false;
-		for (let q of brother_ids) {
-			let node = await this.dsl_parser.getNode({ id:q, recurse:false });
-			let command = await findValidCommand({ node:node, show_debug:false, object:true });
-			brother_x_ids.push(command.x_id);
-			if (brother_x_ids.includes(x_id)==true) return true;
+		if ((id+x_id) in this.x_memory_cache.hasBrotherID) {
+			return this.x_memory_cache.hasBrotherID[id+x_id];
+		} else {
+			let brother_ids = await this.dsl_parser.getBrotherNodesIDs({ id, before:true, after:true }).split(',');
+			let brother_x_ids = [], resp=false;
+			for (let q of brother_ids) {
+				let node = await this.dsl_parser.getNode({ id:q, recurse:false });
+				let command = await findValidCommand({ node:node, show_debug:false, object:true });
+				brother_x_ids.push(command.x_id);
+				if (brother_x_ids.includes(x_id)==true) return true;
+			}
+			//resp = (brother_x_ids.includes(x_id));
+			this.x_memory_cache.hasBrotherID[id+x_id] = resp;
+			return resp;
 		}
-		//resp = (brother_x_ids.includes(x_id));
-		return resp;
 	}
 
 	/**
@@ -942,8 +971,13 @@ export default class concepto {
 	* @return 	{Boolean}
 	*/
 	async hasBrotherBefore(id=this.throwIfMissing('id')) {
-		let brother_ids = await this.dsl_parser.getBrotherNodesIDs({ id, before:true, after:false }).split(',');
-		return brother_ids.includes(id);
+		if (id in this.x_memory_cache.hasBrotherBefore) {
+			return this.x_memory_cache.hasBrotherBefore[id];
+		} else {
+			let brother_ids = await this.dsl_parser.getBrotherNodesIDs({ id, before:true, after:false }).split(',');
+			this.x_memory_cache.hasBrotherBefore[id] = brother_ids.includes(id);
+			return this.x_memory_cache.hasBrotherBefore[id];
+		}
 	}
 
 	/**
@@ -953,8 +987,13 @@ export default class concepto {
 	* @return 	{Boolean}
 	*/
 	async hasBrotherNext(id=this.throwIfMissing('id')) {
-		let brother_ids = await this.dsl_parser.getBrotherNodesIDs({ id, before:false, after:true }).split(',');
-		return brother_ids.includes(id);
+		if (id in this.x_memory_cache.hasBrotherNext) {
+			return this.x_memory_cache.hasBrotherNext[id];
+		} else {
+			let brother_ids = await this.dsl_parser.getBrotherNodesIDs({ id, before:false, after:true }).split(',');
+			this.x_memory_cache.hasBrotherNext[id] = brother_ids.includes(id);
+			return this.x_memory_cache.hasBrotherNext[id];
+		}
 	}
 
 	/**
@@ -966,12 +1005,18 @@ export default class concepto {
 	*/
 	async isExactParentID(id=this.throwIfMissing('id'),x_id=this.throwIfMissing('x_id')) {
 		// @TODO test it after having 'real' commands on some parser 4-ago-20
-		let parent_node = await this.dsl_parser.getParentNode({ id });
-		let parent_command = await this.findValidCommand({ node:parent_node, show_debug:false, object:true });
-		if (parent_command && parent_command.x_id == x_id) {
-			return true;
+		if ((id+x_id) in this.x_memory_cache.isExactParentID) {
+			return this.x_memory_cache.isExactParentID[id+x_id];
+		} else {
+			let parent_node = await this.dsl_parser.getParentNode({ id });
+			let parent_command = await this.findValidCommand({ node:parent_node, show_debug:false, object:true });
+			if (parent_command && parent_command.x_id == x_id) {
+				this.x_memory_cache.isExactParentID[id+x_id]=true;
+				return true;
+			}
+			this.x_memory_cache.isExactParentID[id+x_id]=false;
+			return false;
 		}
-		return false;
 	}
 
 	/**
@@ -1150,36 +1195,65 @@ function allTrue(object,keys) {
 }
 
 //returns true if num meets the conditions listed on test (false otherwise)
-function numberInCondition(num,test) {	
+function numberInCondition(num,command_test) {	
+	// num is always 'number' type
 	let resp=true;
-	if (!isNaN(num) && num==parseInt(test)) {
-		// if num=test
-	} else if (test.indexOf('>')!=-1 || test.indexOf('<')!=-1) {
-		// 'and/all' (>2,<7)
-		for (let i of test.split(',')) {
-			if (i.substring(0,1)=='>') {
-				if (num<=parseInt(i.replace('>',''))) {
-					resp=false;
-					break;
-				}
-			} else if (i.substring(0,1)=='<') {
-				if (num>=parseInt(i.replace('<',''))) {
-					resp=false;
-					break;
+	if (command_test.toString()===num.toString()) {
+
+	} else if (typeof command_test === 'number') {
+		// cases test: 2,5,9,1 (exact matches)
+		if (num==command_test) {
+			resp=true;
+		} else if (num!=command_test) {
+			resp=false;
+		}
+
+	} else if (typeof command_test === 'string') {
+		if (command_test.indexOf(',')==-1 && command_test.charAt(0)=='<') {
+			// one condition: <2 or <7
+			if (num>=parseInt(command_test.replace('<',''))) {
+				resp=false;
+			}
+		} else if (command_test.indexOf(',')==-1 && command_test.charAt(0)=='>') {
+			// one condition: >2 or >7
+			if (num<=parseInt(command_test.replace('>',''))) {
+				resp=false;
+			}
+		} else if (command_test.indexOf(',')==-1 && command_test!=num.toString()) {
+			resp=false;
+
+		} else {
+			// cases test:['2','>2','2,3,5']
+			let test2 = command_test.split(',');
+			if (command_test.indexOf('<')==-1 && command_test.indexOf('>')==-1 && test2.includes(num)) {
+				// exact match;
+				resp=true;
+			} else if (command_test.indexOf('<')!=-1 || command_test.indexOf('>')!=-1) {
+				// test may be >2,<5,>7
+				// 'and/all' (>2,<7)
+				for (let i of test2) {
+					if (i.charAt(0)=='>') {
+						if (num<=parseInt(i.replace('>',''))) {
+							resp=false;
+							break;
+						}
+					} else if (i.charAt(0)=='<') {
+						if (num>=parseInt(i.replace('<',''))) {
+							resp=false;
+							break;
+						}
+					}
 				}
 			}
 		}
 	} else {
-		// 'or/any' (2,3,5)
 		resp=false;
-		for (let i of test.split(',')) {
-			if (num==i) {
-				resp=true;
-				break;
-			}
-		}
 	}
 	return resp;
+}
+
+function getVal(project, myPath){
+    return myPath.split('.').reduce ( (res, prop) => res[prop], project );
 }
 
 function setImmediatePromise() {
@@ -1187,10 +1261,6 @@ function setImmediatePromise() {
 	return new Promise((resolve) => {
 	  setImmediate(() => resolve());
 	});
-}
-
-function getVal(project, myPath){
-    return myPath.split('.').reduce ( (res, prop) => res[prop], project );
 }
 
 // end: private helper methods
