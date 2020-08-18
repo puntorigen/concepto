@@ -566,10 +566,11 @@ export default class concepto {
 
 	async findValidCommand({node=this.throwIfMissing('node'),object=false,x_command_shared_state={},show_debug=true}={}) {
 		if (!this.x_flags.init_ok) throw new Error('error! the first called method must be init()!');
-		if (show_debug) this.debug({ message:`findValidCommand called for node ${node.id}, level:${node.level}, text:${node.text}`, color:'yellow' });
 		if (node.id in this.x_memory_cache.findValidCommand) {
+			//if (show_debug) this.debug({ message:`findValidCommand called for node ${node.id}, level:${node.level}, text:${node.text} using CACHE`, color:'green' });
 			return this.x_memory_cache.findValidCommand[node.id];
 		} else {
+			if (show_debug) this.debug({ message:`findValidCommand called for node ${node.id}, level:${node.level}, text:${node.text}`, color:'yellow' });
 			let reply={};
 			let commands_ = await this.findCommand({node,justone:false,show_debug:show_debug});
 			// @TODO debug and test
@@ -698,6 +699,7 @@ export default class concepto {
 				if (nodei.state) new_state = {...real2.state}; // inherint state from last command if defined
 				if (real2 && real2.exec && real2.exec.valid==true) {
 					//resp.children.push(real2.exec);
+					if (real2.exec.state) new_state = {...new_state,...real2.exec.state};
 					//console.log('real2 dice:',real2);
 					resp.init += real2.exec.init;
 					resp.code += real2.exec.open;
@@ -735,16 +737,18 @@ export default class concepto {
 		//
 		//try {
 			//console.log('process_main->findValidCommand node:'+node.text);
-			let test = await this.findValidCommand({ node:node,object:false,x_command_shared_state:custom_state });
+			let copy_state = {...custom_state};
+			let test = await this.findValidCommand({ node:node,object:false,x_command_shared_state:copy_state });
 			//this.debug(`test para node: text:${node.text}`,test);
 			if (test && test.exec && test.exec.valid==true) {
+				if (test.exec.state) copy_state = {...copy_state,...test.exec.state};
 				resp = {...resp,...test.exec};
 				resp.error = false;
 				resp.init += resp.init;
 				resp.code += resp.open;
 				if (!resp.x_ids) resp.x_ids=[]; resp.x_ids.push(test.x_id);
 				if (typeof node.getNodes === 'function') {
-					resp = await this.sub_process(resp,node,custom_state);
+					resp = await this.sub_process(resp,node,copy_state);
 				}
 				resp.code += resp.close;
 				resp.x_ids = resp.x_ids.join(',');
