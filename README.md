@@ -37,6 +37,7 @@ Concepto DSL Base Class: A base class (to be extended) for defining new language
         * [.getParentIDs(id, array)](#module_concepto+getParentIDs) ⇒ <code>string</code> \| <code>Array.&lt;Object&gt;</code>
         * [.getParentIDs2Array(id)](#module_concepto+getParentIDs2Array) ⇒ <code>Array.&lt;Object&gt;</code>
         * ~~[.getParentIDs2ArrayWXID(id)](#module_concepto+getParentIDs2ArrayWXID) ⇒ <code>Array.&lt;Object&gt;</code>~~
+        * [.tagParams(struct)](#module_concepto+tagParams) ⇒ <code>string</code>
         * [.struct2params(struct)](#module_concepto+struct2params) ⇒ <code>string</code>
     * _inner_
         * [~NodeDSL](#module_concepto..NodeDSL) : <code>Object</code>
@@ -379,6 +380,17 @@ Helper method to return all NodeDSL ids parents of given NodeDSL id
 | Param | Type | Description |
 | --- | --- | --- |
 | id | <code>string</code> | ID of NodeDSL object to query |
+
+<a name="module_concepto+tagParams"></a>
+
+### concepto.tagParams(struct) ⇒ <code>string</code>
+Helper method to return a tag with key/values as tag attributes
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| struct | <code>Object</code> | Object with keys and values to transform from. |
 
 <a name="module_concepto+struct2params"></a>
 

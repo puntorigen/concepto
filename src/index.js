@@ -1110,6 +1110,26 @@ export default class concepto {
 	}
 
 	/**
+	* Helper method to return a tag with key/values as tag attributes
+	* @param 	{Object}	struct		- Object with keys and values to transform from.
+	* @return 	{string}
+	*/
+	tagParams(tag='',params={}, selfclose=false) {
+		let resp='';
+		let x_params = this.struct2params(params);
+		if (x_params!='') {
+			resp=`<${tag} ${x_params}`;
+			if (selfclose==true) resp+='/';
+			resp+='>';
+		} else {
+			resp=`<${tag}`;
+			if (selfclose==true) resp+='/';
+			resp+='>';
+		}
+		return resp;
+	};
+
+	/**
 	* Helper method to transform object keys/values into params for customtags usage
 	* @param 	{Object}	struct		- Object with keys and values to transform from.
 	* @return 	{string}
