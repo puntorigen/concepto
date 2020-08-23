@@ -320,7 +320,7 @@ export default class concepto {
 			return this.x_memory_cache.findCommand[node.id];
 		} else {
 			if (show_debug) this.debug(`findCommand for node ID ${node.id}`);
-			let keys = 'x_icons,x_not_icons,x_not_empty,x_not_text_contains,x_empty,x_text_starts,x_text_contains,x_level,x_or_hasparent,x_all_hasparent,x_or_isparent';
+			let keys = 'x_icons,x_not_icons,x_not_empty,x_not_text_contains,x_empty,x_text_exact,x_text_contains,x_level,x_or_hasparent,x_all_hasparent,x_or_isparent';
 			let command_requires1 = setObjectKeys(keys,'');
 			let node_features = {...command_requires1}; 
 			let command_defaults = {...command_requires1};
@@ -443,7 +443,13 @@ export default class concepto {
 					}
 					this.debug_timeEnd({ id:`${key} x_empty` });
 				}
-				// test 6: x_text_contains
+				// test 6: x_text_exact
+				if (allTrue(matched,keys) && command_requires['x_text_exact']!='') {
+					this.debug_time({ id:`${key} x_text_exact` });
+					matched.x_text_exact = (command_requires['x_text_exact']==node.text)?true:false;
+					this.debug_timeEnd({ id:`${key} x_text_exact` });
+				}
+				// test 7: x_text_contains
 				if (allTrue(matched,keys) && command_requires['x_text_contains']!='') {
 					this.debug_time({ id:`${key} x_text_contains` });
 					// @TODO here we are
@@ -471,27 +477,27 @@ export default class concepto {
 					}
 					this.debug_timeEnd({ id:`${key} x_text_contains` });
 				}
-				// test 7: x_level - example: '2,3,4' (any) or '>2,<7' (all)
+				// test 8: x_level - example: '2,3,4' (any) or '>2,<7' (all)
 				if (command_requires['x_level']!='' && allTrue(matched,keys)) {
 					this.debug_time({ id:`${key} x_level` });
 					matched.x_level=numberInCondition(node.level,command_requires['x_level']);	
 					this.debug_timeEnd({ id:`${key} x_level` });
 				}
-				// test 8: x_or_hasparent
+				// test 9: x_or_hasparent
 				if (command_requires['x_or_hasparent']!='' && allTrue(matched,keys)) {
 					this.debug_time({ id:`${key} x_or_hasparent` });
 					//matched.x_or_hasparent=false;
 					matched.x_or_hasparent = await this.hasParentID(node.id,command_requires['x_or_hasparent']);
 					this.debug_timeEnd({ id:`${key} x_or_hasparent` });
 				}
-				// test 9: x_all_hasparent
+				// test 10: x_all_hasparent
 				if (command_requires['x_all_hasparent']!='' && allTrue(matched,keys)) {
 					this.debug_time({ id:`${key} x_all_hasparent` });
 					matched.x_all_hasparent = await this.hasParentID(node.id,command_requires['x_all_hasparent'],true);
 					this.debug_timeEnd({ id:`${key} x_all_hasparent` });
 				}
 				
-				// test 10: x_or_isparent
+				// test 11: x_or_isparent
 				if (command_requires['x_or_isparent']!='' && allTrue(matched,keys)) {
 					this.debug_time({ id:`${key} x_or_isparent` });
 					let is_direct=false;
