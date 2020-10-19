@@ -141,7 +141,11 @@ export default class concepto {
 			}
 			// continue
 			this.x_flags.init_ok = true;
-			await this.onInit();
+			try {
+				await this.onInit();
+			} catch(eeee) {
+				this.x_console.out({ message:`onInit() ${eeee}`, color:'red' });
+			}
 		} else {
 			// this was already called!
 			this.x_console.out({ message:`you may only call method init() once!` });
