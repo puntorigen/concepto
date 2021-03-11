@@ -867,14 +867,15 @@ export default class concepto {
 	* @param 	{string} 	[output_dir]	- Overwrites the default output base directory (which is the location of the dsl file being proccessed).
 	* @return 	{Object}
 	*/
-	async _appFolders(keys,output_dir) {
+	async _appFolders(keys,compile_folder=this.x_state.central_config.apptitle,output_dir) {
 		let fs = require('fs').promises;
 		this.debug('_appFolders');
 		let path = require('path');
-		let dsl_folder = path.dirname(path.resolve(this.x_flags.dsl));
+		let dsl_folder = path.dirname(path.resolve(this.x_flags.dsl))+path.sep;
 		if (output_dir) dsl_folder=output_dir;
-		let resp = { base:dsl_folder, src:dsl_folder+path.sep+this.x_state.central_config.apptitle+path.sep };
+		let resp = { base:dsl_folder, src:dsl_folder+((compile_folder)?compile_folder:this.x_state.central_config.apptitle)+path.sep };
 		resp.app = path.normalize(resp.src);
+		resp.compile_folder = compile_folder;
 		// depending on central config type
 		for (let key in keys) {
 			resp[key] = path.join(resp.app,keys[key]);
