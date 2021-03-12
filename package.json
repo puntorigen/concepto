@@ -1,4 +1,5 @@
 {
+  "private": true,
   "name": "concepto",
   "version": "1.2.5",
   "description": "Punto Origen - ES6 Concepto Class Interface",
@@ -10,14 +11,14 @@
   ],
   "license": "AGPL-3.0-or-later",
   "author": "Pablo Schaffner",
-  "homepage": "http://github.com/puntorigen/concepto.git",
+  "homepage": "http://github.com/puntorigen4u/concepto.git",
   "repository": {
     "type": "git",
-    "url": "http://github.com/puntorigen/concepto.git"
+    "url": "http://github.com/puntorigen4u/concepto.git"
   },
   "bugs": {
     "mail": "pablo@puntorigen.com",
-    "url": "http://github.com/puntorigen/concepto/issues"
+    "url": "http://github.com/puntorigen4u/concepto/issues"
   },
   "main": "lib/index.js",
   "scripts": {
@@ -27,8 +28,8 @@
     "test_dsl": "npm run dev && node test/pablo.js test/ejecutivos.dsl"
   },
   "dependencies": {
-    "dsl_parser": "github:puntorigen/dsl_parser",
-    "open_console": "github:puntorigen/console"
+    "dsl_parser": "github:puntorigen4u/dsl_parser",
+    "open_console": "github:puntorigen4u/console"
   },
   "devDependencies": {
     "@babel/core": "^7.11.1",
