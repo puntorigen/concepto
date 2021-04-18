@@ -17,6 +17,7 @@ Concepto DSL Base Class: A base class (to be extended) for defining new language
         * [.onPrepare()](#module_concepto+onPrepare)
         * [.onErrors(errors)](#module_concepto+onErrors)
         * [.onCreateFiles(processedNodes)](#module_concepto+onCreateFiles)
+        * [.onEnd()](#module_concepto+onEnd)
         * [.addCommands(command_func)](#module_concepto+addCommands)
         * [.findCommand(node, [justone])](#module_concepto+findCommand) ⇒ <code>Command</code> \| <code>Array.&lt;Command&gt;</code>
         * [.findValidCommand(node, [object])](#module_concepto+findValidCommand) ⇒ <code>Command</code> \| <code>boolean</code>
@@ -151,6 +152,12 @@ Gets automatically called after all processing on nodes has being done. You usua
 | --- | --- | --- |
 | processedNodes | <code>Array.&lt;Object&gt;</code> | array of nodes already processed (keys of reply_template method) ready to be written to disk |
 
+<a name="module_concepto+onEnd"></a>
+
+### concepto.onEnd()
+Gets automatically called after all processes have finished. Useful for cleaning the enviroment.
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
 <a name="module_concepto+addCommands"></a>
 
 ### concepto.addCommands(command_func)

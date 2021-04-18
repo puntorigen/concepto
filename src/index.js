@@ -262,6 +262,13 @@ export default class concepto {
 	async onCreateFiles(processedNodes) {
 	}
 
+	/**
+	* Gets automatically called after all processes have finished. Useful for cleaning the enviroment.
+	* @async
+	*/
+	async onEnd() {
+	}
+
 	// ********************
 	// helper methods
 	// ********************
@@ -691,6 +698,7 @@ export default class concepto {
 		// some debug
 		//this.debug('after nodes processing, resp says:',resp);
 		//this.debug('app state says:',this.x_state);
+		await this.onEnd();
 		return resp;
 	}
 
