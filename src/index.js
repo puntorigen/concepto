@@ -115,7 +115,7 @@ export default class concepto {
 				// @TODO implement cache (i'll port 'cache' for after testing version 1)
 				//this.x_console.outT({ message:`creating dsl_cache subdir ..`, color:'cyan', data:tmp.directory });
 			}
-			this.x_console.outT({ message:`time passed since start .. ${this.secsPassed_()} secs`, color:'cyan' });
+			this.x_console.outT({ message:`time passed since start .. ${this.secsPassed_()}`, color:'cyan' });
 			// @TODO create github compatible DSL
 			if (this.x_config.dsl_git) {
 				this.x_console.outT({ message:`creating git compatible DSL`, color:'green' });
@@ -688,11 +688,11 @@ export default class concepto {
 		if (!were_errors) {
 			// request creation of files
 			await this.onCreateFiles(resp.nodes);
-			this.x_console.title({ title:`Interpreter ${this.x_config.class.toUpperCase()} ENDED. Full Compilation took: ${this.secsPassed_()} secs`, color:'green' });
+			this.x_console.title({ title:`Interpreter ${this.x_config.class.toUpperCase()} ENDED. Full Compilation took: ${this.secsPassed_()}`, color:'green' });
 			this.debug_table('Amount of Time Per Command');
 		} else {
 			// errors occurred
-			this.x_console.title({ title:`Interpreter ${this.x_config.class.toUpperCase()} ENDED with ERRORS.\nPlease check your console history.\nCompilation took: ${this.secsPassed_()} secs`, color:'red' });	
+			this.x_console.title({ title:`Interpreter ${this.x_config.class.toUpperCase()} ENDED with ERRORS.\nPlease check your console history.\nCompilation took: ${this.secsPassed_()}`, color:'red' });	
 			//this.debug_table('Amount of Time Per Command');
 		}
 		// some debug
