@@ -118,17 +118,17 @@ export default class concepto {
 			this.x_console.outT({ message:`time passed since start .. ${this.secsPassed_()} secs`, color:'cyan' });
 			// @TODO create github compatible DSL
 			if (this.x_config.dsl_git) {
-				this.x_console.outT({ message:`creating github compatible DSL`, color:'green' });
+				this.x_console.outT({ message:`creating git compatible DSL`, color:'green' });
 				let for_git = await this.dsl_parser.createGitVersion();
 				// save dsl git file
 				if (typeof this.x_config.dsl_git === 'boolean') {
-					tmp.dsl_git_path = path.join(tmp.directory,'dsl_git');
+					//tmp.dsl_git_path = path.join(tmp.directory,'dsl_git');
+					tmp.dsl_git_path = tmp.directory;
 					this.debug(`dsl_git dir`,tmp.dsl_git_path);
-					// @TODO create dsl_git dir and save file contents as dsl_git/(filename).dsl
-					try { 
+					/*try { 
 						await fs.mkdir(tmp.dsl_git_path);
-					} catch(cpath_err) {}
-					let git_target = path.join(tmp.dsl_git_path,path.basename(this.x_flags.dsl));
+					} catch(cpath_err) {}*/
+					let git_target = path.join(tmp.dsl_git_path,'vue_git.dsl'); //,path.basename(this.x_flags.dsl)
 					await fs.writeFile(git_target,for_git,'utf-8');
 					this.debug(`dsl_git file saved as: ${git_target}`);
 				} else if (typeof this.x_config.dsl_git === 'function') {
