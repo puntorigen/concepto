@@ -800,7 +800,7 @@ export default class concepto {
 	secsPassed_() {
 		let tmp = new Date().getTime() - this.x_flags.watchdog.start.getTime();
 		let humanize = require('humanize-duration');
-		return humanize(tmp); //tmp/1000
+		return humanize(tmp,{ maxDecimalPoints: 1 }); //tmp/1000
 	}
 
 	throwIfMissing(name) {
