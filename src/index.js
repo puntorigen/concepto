@@ -907,7 +907,7 @@ export default class concepto {
 		if (arguments.length>0) {
 			let keys = {...arguments[0]};
 			if (typeof keys.id !== 'undefined') { //&& keys.id.indexOf('_x')!=-1
-				let filter_key = keys.id.split(' ')[0];
+				let filter_key = keys.id;//.split(' ')[0];
 				if (typeof this.x_time_stats.times[filter_key] === 'undefined' && filter_key.indexOf('def_')!=-1) {
 					this.x_time_stats.times[filter_key] = new Date();
 					this.x_time_stats.tables[filter_key] = { command:filter_key, calls:0, average_call:0, total_ms:0 };
@@ -931,7 +931,7 @@ export default class concepto {
 	debug_timeEnd() {
 		if (arguments.length>0) { 
 			let keys = {...arguments[0]}, filter_key=''; // && keys.id.indexOf('_x')!=-1
-			if (typeof keys.id !== 'undefined') filter_key = keys.id.split(' ')[0];
+			if (typeof keys.id !== 'undefined') filter_key = keys.id;//.split(' ')[0];
 			if (typeof keys.id !== 'undefined' && filter_key.indexOf('def_')!=-1 && filter_key in this.x_time_stats.times) {
 				//if (!this.x_time_stats.tables[keys.id]) this.x_time_stats.tables[keys.id] = {};
 				if (typeof this.x_time_stats.tables[filter_key] !== 'undefined') {
