@@ -478,7 +478,7 @@ export default class concepto {
 					} else if (command_requires['x_text_contains'].indexOf(',')!=-1) {
 						// 'and' delimiter
 						for (let key of command_requires['x_text_contains'].split(',')) {
-							if (node.text.indexOf(key)==-1 || key=='') { //test if empty for case where coma is required
+							if (node.text.indexOf(key)==-1 || (key=='' && node.text.indexOf(',')==-1)) { //test if empty for case where coma is required
 								matched.x_text_contains=false;
 								break;
 							}
