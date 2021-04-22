@@ -475,7 +475,7 @@ A command object specifying requirements for a node to execute its function.
 | [x_not_empty] | <code>string</code> | List of keys that must not be empty to be a match for this command (can be any key from a NodeDSL object). Example: 'attribute[src],color' |
 | [x_not_text_contains] | <code>string</code> | List of strings, which cannot be within the node text. |
 | [x_empty] | <code>string</code> | List of NodeDSL keys that must be empty to be a match for this command. |
-| [x_text_contains] | <code>string</code> | List of strings, that can be contain in node text (if delimiter is comma) or that must be all contained within the node text (if delimiter is |). |
+| [x_text_contains] | <code>string</code> | List of strings, that can be contain in node text (if delimiter is |) or that must be all contained within the node text (if delimiter is comma). |
 | [x_level] | <code>string</code> | Numeric conditions that the level of the node must met (example: '>2,<5' or '2,3,4'). |
 | [x_all_hasparent] | <code>string</code> | List of commands ids (keys), which must be ancestors of the node to be a match for this command. |
 | [x_or_hasparent] | <code>string</code> | List of commands ids (keys), which at least one must be an ancestor of the node to be a match for this command. |
