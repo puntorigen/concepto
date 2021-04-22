@@ -68,6 +68,7 @@ export default class concepto {
 			hasBrotherBefore: {},
 			hasBrotherNext: {},
 		};
+		this.x_match = require('minimatch');
 		// grab class methods that start with the 'on' prefix
 		/* @TODO check if this is useful or needed 1-Aug-2020
 		this.x_on_methods={};
@@ -282,6 +283,7 @@ export default class concepto {
 	* @property {string} [x_not_text_contains] 	- List of strings, which cannot be within the node text.
 	* @property {string} [x_empty] 				- List of NodeDSL keys that must be empty to be a match for this command.
 	* @property {string} [x_text_contains]		- List of strings, that can be contain in node text (if delimiter is |) or that must be all contained within the node text (if delimiter is comma).
+	* @property {string} [x_text_pattern]		- Minimatch pattern to match to be a match for this command.
 	* @property {string} [x_level] 				- Numeric conditions that the level of the node must met (example: '>2,<5' or '2,3,4').
 	* @property {string} [x_all_hasparent] 		- List of commands ids (keys), which must be ancestors of the node to be a match for this command.
 	* @property {string} [x_or_hasparent] 		- List of commands ids (keys), which at least one must be an ancestor of the node to be a match for this command.
@@ -331,7 +333,7 @@ export default class concepto {
 			return this.x_memory_cache.findCommand[node.id];
 		} else {
 			if (show_debug) this.debug(`findCommand for node ID ${node.id}`);
-			let keys = 'x_icons,x_not_icons,x_not_empty,x_not_text_contains,x_empty,x_text_exact,x_text_contains,x_level,x_or_hasparent,x_all_hasparent,x_or_isparent';
+			let keys = 'x_icons,x_not_icons,x_not_empty,x_not_text_contains,x_empty,x_text_exact,x_text_contains,x_text_pattern,x_level,x_or_hasparent,x_all_hasparent,x_or_isparent';
 			let command_requires1 = setObjectKeys(keys,'');
 			let node_features = {...command_requires1}; 
 			let command_defaults = {...command_requires1};
@@ -521,6 +523,14 @@ export default class concepto {
 					this.debug_timeEnd({ id:`${key} x_or_isparent` });
 				}
 				
+				// test 12: x_text_pattern
+				// example: ejecutar en "*" +(segundos|minutos|horas)
+				if (command_requires['x_text_pattern']!='' && allTrue(matched,keys)) {
+					this.debug_time({ id:`${key} x_text_pattern` });
+					matched.x_text_pattern = this.x_match(node.text,command_requires['x_text_pattern']);
+					this.debug_timeEnd({ id:`${key} x_text_pattern` });
+				}
+
 				// ***************************
 				// if we passed all tests ... 
 				// ***************************
