@@ -283,7 +283,7 @@ export default class concepto {
 	* @property {string} [x_not_text_contains] 	- List of strings, which cannot be within the node text.
 	* @property {string} [x_empty] 				- List of NodeDSL keys that must be empty to be a match for this command.
 	* @property {string} [x_text_contains]		- List of strings, that can be contain in node text (if delimiter is |) or that must be all contained within the node text (if delimiter is comma).
-	* @property {string} [x_text_pattern]		- Minimatch pattern to match to be a match for this command.
+	* @property {string|string[]} [x_text_pattern]		- Minimatch pattern to match to be a match for this command. Can also be an array of patterns (one must match).
 	* @property {string} [x_level] 				- Numeric conditions that the level of the node must met (example: '>2,<5' or '2,3,4').
 	* @property {string} [x_all_hasparent] 		- List of commands ids (keys), which must be ancestors of the node to be a match for this command.
 	* @property {string} [x_or_hasparent] 		- List of commands ids (keys), which at least one must be an ancestor of the node to be a match for this command.
@@ -525,12 +525,23 @@ export default class concepto {
 				
 				// test 12: x_text_pattern
 				// example: ejecutar en "*" +(segundos|minutos|horas)
-				if (command_requires['x_text_pattern']!='' && allTrue(matched,keys)) {
+				if (typeof command_requires['x_text_pattern'] === 'string' && command_requires['x_text_pattern']!='' && allTrue(matched,keys)) {
 					this.debug_time({ id:`${key} x_text_pattern` });
 					matched.x_text_pattern = this.x_match(node.text,command_requires['x_text_pattern']);
 					this.debug_timeEnd({ id:`${key} x_text_pattern` });
 				}
-
+				// test 12b: x_text_pattern as array of strings
+				// any must match
+				if (Array.isArray(command_requires['x_text_pattern']) == true && command_requires['x_text_pattern'].length>0 && allTrue(matched,keys)) {
+					this.debug_time({ id:`${key} x_text_pattern[]` });
+					let one_true = false;
+					for (let xtp of command_requires['x_text_pattern']) {
+						let test = this.x_match(node.text,command_requires['x_text_pattern']);
+						if (test==true) one_true = true;
+					}
+					matched.x_text_pattern = one_true;
+					this.debug_timeEnd({ id:`${key} x_text_pattern[]` });
+				}
 				// ***************************
 				// if we passed all tests ... 
 				// ***************************
