@@ -535,12 +535,12 @@ export default class concepto {
 				// any must match
 				if (Array.isArray(command_requires['x_text_pattern']) == true && command_requires['x_text_pattern'].length>0 && allTrue(matched,keys)) {
 					this.debug_time({ id:`${key} x_text_pattern[]` });
-					let one_true = false;
+					let test = false;
 					for (let xtp of command_requires['x_text_pattern']) {
-						let test = this.x_match(node.text,xtp);
-						if (test==true) one_true = true;
+						test = this.x_match(node.text,xtp);
+						if (test==true) break;
 					}
-					matched.x_text_pattern = one_true;
+					matched.x_text_pattern = test;
 					this.debug_timeEnd({ id:`${key} x_text_pattern[]` });
 				}
 				// ***************************
