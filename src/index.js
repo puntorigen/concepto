@@ -41,6 +41,7 @@
  * @property {string} color - Color of visual connection.
  * @property {string} style - Graphical representation type of link (source-to-target, target-to-source, both-ways). 
 */
+//import dsl_parser from '../../dsl_parser/src/index'
 export default class concepto {
 
 	constructor(file,config={}) {
@@ -536,7 +537,7 @@ export default class concepto {
 					this.debug_time({ id:`${key} x_text_pattern[]` });
 					let one_true = false;
 					for (let xtp of command_requires['x_text_pattern']) {
-						let test = this.x_match(node.text,command_requires['x_text_pattern']);
+						let test = this.x_match(node.text,xtp);
 						if (test==true) one_true = true;
 					}
 					matched.x_text_pattern = one_true;
