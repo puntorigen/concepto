@@ -619,8 +619,10 @@ export default class concepto {
 				reply = {...commands_[0]};
 				// try executing the node on the found commands_
 				try {
+					//if (object==true) {
 					let test = await this.x_commands[reply.x_id].func(node,x_command_shared_state);
 					reply.exec = test;
+					//}
 					// @TODO test if _f4e is used; because its ugly
 					reply._f4e = commands_[0].x_id;
 					if (show_debug) this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[0].x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
@@ -640,10 +642,10 @@ export default class concepto {
 					let qm = commands_[qm_index];
 					try {
 						let test = await this.x_commands[qm.x_id].func(node,x_command_shared_state);
-						if (test.valid) {
+						if (test && test.valid && test.valid==true) {
 							if (show_debug) this.debug({ message:`findValidCommand: ${parseInt(qm_index)+1}/${commands_.length} testing command ${qm.x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
 							if (show_debug) this.debug({ message:'---------------------', time:false });
-							if (object) {
+							if (object) {//==true) { -this needs further testing 27abr21
 								reply=test;
 							} else {
 								// @TODO test if _f4e is used; because its ugly
@@ -731,12 +733,15 @@ export default class concepto {
 		let resp = {...source_resp};
 		if (resp.hasChildren==true && resp.valid==true) {
 			let sub_nodes = await nodei.getNodes();
-			let new_state = {...custom_state};
+			let new_state = {};
+			if (nodei.state) new_state = {...nodei.state};
+			new_state = {...new_state,...custom_state};
 			for (let sublevel of sub_nodes) {
 				let real = await this.dsl_parser.getNode({ id:sublevel.id, nodes_raw:true, recurse:false });
 				let real2 = await this.findValidCommand({ node:real, object:false, x_command_shared_state:new_state });
 				//console.log('sub_process->findValidCommand node:'+real.text,real2);
-				if (nodei.state) new_state = {...real2.state}; // inherint state from last command if defined
+				//if (nodei.state) new_state = {...new_state, ...nodei.state, ...real2.state}; // inherint state from last command if defined
+				if (real2.state) new_state = {...new_state, ...real2.state}; // inherint state from last command if defined
 				if (real2 && real2.exec && real2.exec.valid==true) {
 					//resp.children.push(real2.exec);
 					if (real2.exec.state) new_state = {...new_state,...real2.exec.state};
@@ -786,6 +791,7 @@ export default class concepto {
 				resp.error = false;
 				resp.init += resp.init;
 				resp.code += resp.open;
+				resp.state = copy_state;
 				if (!resp.x_ids) resp.x_ids=[]; resp.x_ids.push(test.x_id);
 				if (typeof node.getNodes === 'function') {
 					resp = await this.sub_process(resp,node,copy_state);
