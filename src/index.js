@@ -42,11 +42,13 @@
  * @property {string} style - Graphical representation type of link (source-to-target, target-to-source, both-ways). 
 */
 //import dsl_parser from '../../dsl_parser/src/index'
+//import console_ from '../../console/src/index'
 export default class concepto {
 
 	constructor(file,config={}) {
 		if (arguments.length!=2 || typeof arguments[0] === 'object') throw new Error('fatal error! missing file parameter for parser!');
-		let console_ = require('open_console'), me=this;
+		let console_ = require('open_console'); 
+		let me=this;
 		let def_config = {
 			class:'concepto',
 			console:true,
@@ -90,7 +92,8 @@ export default class concepto {
 	*/
 	async init() {
 		if (!this.x_flags.init_ok) {
-			let dsl_parser = require('dsl_parser'), path = require('path'), fs = require('fs').promises, tmp = {};
+			let dsl_parser = require('dsl_parser');
+			let path = require('path'), fs = require('fs').promises, tmp = {};
 			// show title
 			this.x_console.title({ 
 				title: `DSL Interpreter ${this.x_config.class}\ninit:compiling file:\n${this.x_flags.dsl}`, 
@@ -688,14 +691,75 @@ export default class concepto {
 		this.debug_time({ id:'onPrepare' });
 		await this.onPrepare();
 		this.debug_timeEnd({ id:'onPrepare' });
-		// 
+		if (!this.x_config.debug) { 
+			this.progress_multi = {};
+			this.multibar = this.x_console.progress({
+				format: `{text} {bar} | {screen}`,
+				config: { barsize:20 }, 
+				formatData:(data)=>{
+					//color the progress bar
+					if (typeof data.error === 'undefined') data.error=false;
+					if (data.error && data.error==true) {
+						data.bar = data.funcs.colors.red(data.bar);
+						data.text = data.funcs.colors.red('processing error'); //+' '+data.funcs.symbols.fail;
+					} else if (data.percentage<=20) {
+						data.bar = data.funcs.colors.magenta(data.bar);
+					} else if (data.percentage<=60) {
+						data.bar = data.funcs.colors.yellow(data.bar);
+					} else {
+						data.bar = data.funcs.colors.green(data.bar);
+					}
+					if (data.screen) data.screen = data.funcs.colors.cyan(data.screen);
+					if (data.total_ && data.total_=='x') {
+						if (data.percentage>=100) {
+							data._format = '{text} | {screen}';
+							data.text = 'processing complete!';
+						} else {
+							data._format = '{text} {bar} | {screen} (time left {eta})';
+							data.text = data.funcs.colors.dim('overall progress');
+						}
+					} else {
+						if (data.sub && data.sub!='') {
+							data.sub = data.funcs.colors.dim(data.sub);
+							data.percentage = data.funcs.colors.dim(data.percentage+' %');
+							data._format = '{text} {bar} | {screen} -> {sub} {percentage}';
+						}
+						if (data.percentage>=100) {
+							data._format = '{text} | {screen}';
+							data.text = 'processing done! '+data.funcs.symbols.success;
+						} else {
+							data.text = data.funcs.colors.dim('processing');
+						}
+					}
+					return data;
+				}
+			});
+			// 
+			this.progress_multi['_total_'] = this.multibar.create(x_dsl_nodes.length-1, { total_:'x', screen:'initializing..' });
+		}
+		let counter_=0;
 		for (let level2 of x_dsl_nodes) {
 			//this.debug('node',node);
+			counter_+=1;
+			if (!this.x_config.debug) { 
+				this.progress_multi[level2.text] = this.multibar.create(level2.nodes_raw.length-1, { total_:'', screen:'initializing..' });
+				this.progress_multi['_total_'].update(counter_, { total_:'x', screen:level2.text });
+				this.progress_last = this.progress_multi[level2.text];
+				this.progress_last_screen = level2.text;
+			}
 			// remove await when in production (use Promise.all after loop then)
 			let main = await this.process_main(level2,{});
+			if (!this.x_config.debug) {
+				this.progress_multi[level2.text].total(level2.nodes_raw.length-1);
+				this.progress_multi[level2.text].update(level2.nodes_raw.length-1, { screen:level2.text, sub:'', total_:'' });
+			}
 			// append to resp
 			resp.nodes.push(main);
 			await setImmediatePromise();
+		}
+		if (!this.x_config.debug) {
+			this.progress_multi['_total_'].remove();
+			this.multibar.stop();
 		}
 		// @TODO enable when not debugging
 		//resp.nodes = await Promise.all(resp.nodes);
@@ -733,12 +797,19 @@ export default class concepto {
 		let resp = {...source_resp};
 		if (resp.hasChildren==true && resp.valid==true) {
 			let sub_nodes = await nodei.getNodes();
-			let new_state = {};
+			let new_state = {}, xx=0;
 			if (nodei.state) new_state = {...nodei.state};
 			new_state = {...new_state,...custom_state};
+			if (!this.x_config.debug) {
+				this.progress_last.total(sub_nodes.length-1);
+			}
 			for (let sublevel of sub_nodes) {
+				xx+=1;
 				let real = await this.dsl_parser.getNode({ id:sublevel.id, nodes_raw:true, recurse:false });
 				let real2 = await this.findValidCommand({ node:real, object:false, x_command_shared_state:new_state });
+				if (!this.x_config.debug) {
+					this.progress_last.update(xx, { screen:this.progress_last_screen, sub:real2.x_id, total_:'' });
+				}
 				//console.log('sub_process->findValidCommand node:'+real.text,real2);
 				//if (nodei.state) new_state = {...new_state, ...nodei.state, ...real2.state}; // inherint state from last command if defined
 				if (real2.state) new_state = {...new_state, ...real2.state}; // inherint state from last command if defined
@@ -752,6 +823,10 @@ export default class concepto {
 					resp = await this.sub_process(resp,sublevel,new_state);
 					resp.code += real2.exec.close;
 				} else if (real2.error==true) {
+					if (!this.x_config.debug) {
+						this.progress_last.total(xx);
+						this.progress_last.update(xx, { screen:'ERROR', error:true });
+					}
 					this.x_console.outT({ message:`error: Executing func x_command:${real2.x_id} for node: id:${real.id}, level ${real.level}, text: ${real.text}.`, data:{ id:real.id, level:real.level, text:real.text, data:real2.catch, x_command_state:new_state }});
 					await this.onErrors([`Error executing func for x_command:${real2.x_id} for node id ${real.id}, text: ${real.text} `]);
 					resp.valid=false, resp.hasChildren=false, resp.error=true;
@@ -778,7 +853,9 @@ export default class concepto {
 			x_ids: [],
 			subnodes: node.nodes_raw.length
 		};
-		this.x_console.outT({ prefix:'process,yellow', message:`processing node ${node.text} ..`, color:'yellow' });
+		if (this.x_config.debug) {
+			this.x_console.outT({ prefix:'process,yellow', message:`processing node ${node.text} ..`, color:'yellow' });
+		}
 		//
 		//try {
 			//console.log('process_main->findValidCommand node:'+node.text);
