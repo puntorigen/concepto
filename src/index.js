@@ -665,6 +665,7 @@ export default class concepto {
 						reply.catch = test_err1;
 						// @TODO we should throw an error, so our parents catch it (9-AGO-20) and break the loop
 					}
+					await setImmediatePromise();
 				}
 			}
 			if (Object.keys(reply).length==0) reply=false;
@@ -695,7 +696,7 @@ export default class concepto {
 			this.progress_multi = {};
 			this.multibar = this.x_console.progress({
 				format: `{text} {bar} | {screen}`,
-				config: { barsize:20 }, 
+				config: { barsize:20, etaBuffer:500, fps:20 }, 
 				formatData:(data)=>{
 					//color the progress bar
 					if (typeof data.error === 'undefined') data.error=false;
@@ -712,10 +713,10 @@ export default class concepto {
 					if (data.screen) data.screen = data.funcs.colors.cyan(data.screen);
 					if (data.total_ && data.total_=='x') {
 						if (data.percentage>=100) {
-							data._format = '{text} | {screen}';
-							data.text = 'processing complete!';
+							data._format = '{text}'; // | {screen}
+							data.text = 'processing complete! '+data.funcs.symbols.success;
 						} else {
-							data._format = '{text} {bar} | {screen} (time left {eta})';
+							data._format = '{text} {bar} | {screen} (time {duration})';
 							data.text = data.funcs.colors.dim('overall progress');
 						}
 					} else {
@@ -740,7 +741,6 @@ export default class concepto {
 		let counter_=0;
 		for (let level2 of x_dsl_nodes) {
 			//this.debug('node',node);
-			counter_+=1;
 			if (!this.x_config.debug) { 
 				this.progress_multi[level2.text] = this.multibar.create(level2.nodes_raw.length-1, { total_:'', screen:'initializing..' });
 				this.progress_multi['_total_'].update(counter_, { total_:'x', screen:level2.text });
@@ -756,6 +756,7 @@ export default class concepto {
 			// append to resp
 			resp.nodes.push(main);
 			await setImmediatePromise();
+			counter_+=1;
 		}
 		if (!this.x_config.debug) {
 			this.progress_multi['_total_'].remove();
@@ -802,6 +803,7 @@ export default class concepto {
 			new_state = {...new_state,...custom_state};
 			if (!this.x_config.debug) {
 				this.progress_last.total(sub_nodes.length-1);
+				this.progress_multi['_total_'].raw().updateETA();
 			}
 			for (let sublevel of sub_nodes) {
 				xx+=1;
