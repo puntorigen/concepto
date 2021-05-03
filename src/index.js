@@ -714,9 +714,9 @@ export default class concepto {
 					if (data.total_ && data.total_=='x') {
 						if (data.percentage>=100) {
 							data._format = '{text}'; // | {screen}
-							data.text = 'processing complete! '+data.funcs.symbols.success;
+							data.text = data.funcs.colors.green('processing complete! ')+data.funcs.symbols.success;
 						} else {
-							data._format = '{text} {bar} | {screen} (time {duration})';
+							data._format = '{text} {bar} | {screen} ({eta} remaining)';
 							data.text = data.funcs.colors.dim('overall progress');
 						}
 					} else {
@@ -726,7 +726,8 @@ export default class concepto {
 							data._format = '{text} {bar} | {screen} -> {sub} {percentage}';
 						}
 						if (data.percentage>=100) {
-							data._format = '{text} | {screen}';
+							let took = data.funcs.colors.dim(' - {duration}');
+							data._format = '{text} | {screen}'+took;
 							data.text = 'processing done! '+data.funcs.symbols.success;
 						} else {
 							data.text = data.funcs.colors.dim('processing');
@@ -742,6 +743,7 @@ export default class concepto {
 		for (let level2 of x_dsl_nodes) {
 			//this.debug('node',node);
 			if (!this.x_config.debug) { 
+				if (this.progress_last) this.progress_last.raw().stop();
 				this.progress_multi[level2.text] = this.multibar.create(level2.nodes_raw.length-1, { total_:'', screen:'initializing..' });
 				this.progress_multi['_total_'].update(counter_, { total_:'x', screen:level2.text });
 				this.progress_last = this.progress_multi[level2.text];
