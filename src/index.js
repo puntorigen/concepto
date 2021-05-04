@@ -713,7 +713,8 @@ export default class concepto {
 					if (data.screen) data.screen = data.funcs.colors.cyan(data.screen);
 					if (data.total_ && data.total_=='x') {
 						if (data.percentage>=100) {
-							data._format = '{text}'; // | {screen}
+							let took = data.funcs.colors.dim(' - {duration}');
+							data._format = '{text}'+took; // | {screen}
 							data.text = data.funcs.colors.green('processing complete! ')+data.funcs.symbols.success;
 						} else {
 							data._format = '{text} {bar} | {screen} ({eta} remaining)';
@@ -761,7 +762,7 @@ export default class concepto {
 			counter_+=1;
 		}
 		if (!this.x_config.debug) {
-			this.progress_multi['_total_'].remove();
+			this.progress_multi['_total_'].raw().stop(); //.remove();
 			this.multibar.stop();
 		}
 		// @TODO enable when not debugging
@@ -805,7 +806,7 @@ export default class concepto {
 			new_state = {...new_state,...custom_state};
 			if (!this.x_config.debug) {
 				this.progress_last.total(sub_nodes.length-1);
-				this.progress_multi['_total_'].raw().updateETA();
+				//this.progress_multi['_total_'].raw().updateETA();
 			}
 			for (let sublevel of sub_nodes) {
 				xx+=1;
