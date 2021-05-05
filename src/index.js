@@ -531,16 +531,16 @@ export default class concepto {
 				// example: ejecutar en "*" +(segundos|minutos|horas)
 				if (typeof command_requires['x_text_pattern'] === 'string' && command_requires['x_text_pattern']!='' && allTrue(matched,keys)) {
 					this.debug_time({ id:`${key} x_text_pattern` });
-					matched.x_text_pattern = this.x_match(node.text,command_requires['x_text_pattern']);
+					matched.x_text_pattern = this.x_match(node.text.trim(),command_requires['x_text_pattern']);
 					this.debug_timeEnd({ id:`${key} x_text_pattern` });
 				}
 				// test 12b: x_text_pattern as array of strings
 				// any must match
 				if (Array.isArray(command_requires['x_text_pattern']) == true && command_requires['x_text_pattern'].length>0 && allTrue(matched,keys)) {
 					this.debug_time({ id:`${key} x_text_pattern[]` });
-					let test = false;
+					let test = false, text_trim=node.text.trim();
 					for (let xtp of command_requires['x_text_pattern']) {
-						test = this.x_match(node.text,xtp);
+						test = this.x_match(text_trim,xtp);
 						if (test==true) break;
 					}
 					matched.x_text_pattern = test;
