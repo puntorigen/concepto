@@ -107,19 +107,7 @@ export default class concepto {
 				this.x_console.out({ message:`error: file ${this.x_flags.dsl} does't exist!`,data:d_err });
 				return;
 			}
-			// @TODO I believe we should get the subnodes as cheerio references and request as needed on Writer method
-			//this.x_dsl_nodes = await this.dsl_parser.getNodes({ level:2, recurse:true });
-			// 7-ago-2020 x_dsl_nodes commented out, because its not used anymore (was used for git version).
-			/*
-			// parse nodes ..
-			this.x_console.outT({ message:`parsing nodes with dates ..`, color:'cyan' });
-			this.x_dsl_nodes = await this.dsl_parser.getNodes({ level:'2', nodes_raw:true });
-			*/
 			tmp.directory = path.dirname(path.resolve(this.x_flags.dsl));
-			if (this.x_config.cache) {
-				// @TODO implement cache (i'll port 'cache' for after testing version 1)
-				//this.x_console.outT({ message:`creating dsl_cache subdir ..`, color:'cyan', data:tmp.directory });
-			}
 			this.x_console.outT({ message:`time passed since start .. ${this.secsPassed_()}`, color:'cyan' });
 			// @TODO create github compatible DSL
 			if (this.x_config.dsl_git) {
@@ -144,6 +132,14 @@ export default class concepto {
 				//
 				this.x_console.outT({ message:`ready github compatible DSL`, color:'green' });
 			}
+			//config persistant cache
+			this.x_console.outT({ message:`configuring cache ..`, color:'cyan' });
+			this.cache = require('node-persist');
+			let cache_path = path.join(tmp.dsl_git_path,'.concepto_cache');
+			await this.cache.init({
+				dir:cache_path,
+				expiredInterval: 2*60*60*1000 //expire within 2hrs 
+			});
 			// continue
 			this.x_flags.init_ok = true;
 			try {
@@ -155,6 +151,7 @@ export default class concepto {
 			// this was already called!
 			this.x_console.out({ message:`you may only call method init() once!` });
 		}
+		
 	}
 
 	// **********************************
@@ -332,9 +329,12 @@ export default class concepto {
 			if (show_debug) this.debug('error: findCommand was given a blank node!');
 			return resp;
 		}
-		if (node.id in this.x_memory_cache.findCommand) {
+		let cache_key = node.id+node.date_modified.toString() //+node.nodes_raw.toString();
+		let t_cache = await this.cache.getItem(cache_key);
+		if (t_cache) { // node.id in this.x_memory_cache.findCommand
 			if (show_debug) this.debug(`using memory_cache for findCommand for node ID ${node.id}`);
-			return this.x_memory_cache.findCommand[node.id];
+			return t_cache;
+			//return this.x_memory_cache.findCommand[node.id];
 		} else {
 			if (show_debug) this.debug(`findCommand for node ID ${node.id}`);
 			let keys = 'x_icons,x_not_icons,x_not_empty,x_not_text_contains,x_empty,x_text_exact,x_text_contains,x_text_pattern,x_level,x_or_hasparent,x_all_hasparent,x_or_isparent';
@@ -590,7 +590,8 @@ export default class concepto {
 				resp=sorted;
 			}
 			//console.log(`findCommand resp`,resp);
-			this.x_memory_cache.findCommand[node.id] = resp;
+			await this.cache.setItem(cache_key,resp);
+			//this.x_memory_cache.findCommand[node.id] = resp;
 			return resp;
 		}
 	}
@@ -683,6 +684,7 @@ export default class concepto {
 	* @return 	{Object}
 	*/
 	async process() {
+		
 		if (!this.x_flags.init_ok) throw new Error('error! the first called method must be init()!');
 		this.debug_time({ id:'process/writer' }); let tmp = {}, resp = { nodes:[] };
 		// read nodes
@@ -1070,8 +1072,12 @@ export default class concepto {
 	debug_table(title) {
 		// build a table with x_time_stats and show it on the console
 		let table = [];
-		Object.keys(this.x_time_stats.tables).map(function(key) { table.push(this.x_time_stats.tables[key]); }.bind(this));
-		this.x_console.table({ title:(title)?title:'Times per Command', data:table, color:'cyan' });
+		try {
+			Object.keys(this.x_time_stats.tables).map(function(key) { table.push(this.x_time_stats.tables[key]); }.bind(this));
+			this.x_console.table({ title:(title)?title:'Times per Command', data:table, color:'cyan' });
+		} catch(e) {
+			this.x_console.outT({ message:`used cache for finding every command`, color:'cyan' });
+		}
 	}
 
 	/**
