@@ -619,6 +619,8 @@ export default class concepto {
 			// @TODO debug and test
 			if (commands_.length==0) {
 				this.debug({ message:'findValidCommand: no command found.', color:'red' });
+				reply.error=true;
+				reply.catch='no command found';
 			} else if (commands_.length==1) {
 				reply = {...commands_[0]};
 				// try executing the node on the found commands_
@@ -758,12 +760,26 @@ export default class concepto {
 			// remove await when in production (use Promise.all after loop then)
 			if (!main) {
 				main = await this.process_main(level2,{});
-				await this.cache.setItem(level2.hash_content,main);
-				await this.cache.setItem(level2.hash_content+'_x_state',this.x_state);
+				if (main.error && main.error==true) {
+					//don't add main to cache if there was an error processing its inside.
+				} else {
+					await this.cache.setItem(level2.hash_content,main);
+					await this.cache.setItem(level2.hash_content+'_x_state',this.x_state);
+				}
 				//console.log('metido al cache:'+level2.id,main);
 			} else {
 				let cached_state = await this.cache.getItem(level2.hash_content+'_x_state');
 				this.x_state = {...this.x_state,...cached_state};
+				if (main.error && main.error==true) {
+					await this.cache.removeItem(level2.hash_content);
+					//reprocess the removed failed cached node.
+					main = await this.process_main(level2,{});
+					if (main.error && main.error==true) {
+					} else {
+						await this.cache.setItem(level2.hash_content,main);
+						await this.cache.setItem(level2.hash_content+'_x_state',this.x_state);
+					}	
+				}
 				//console.log(level2.id,main);
 			}
 			//
