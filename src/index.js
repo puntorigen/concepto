@@ -135,10 +135,10 @@ export default class concepto {
 			//config persistant cache
 			this.x_console.outT({ message:`configuring cache ..`, color:'cyan' });
 			this.cache = require('node-persist');
-			let cache_path = path.join(tmp.dsl_git_path,'.concepto_cache');
+			let cache_path = path.join(tmp.dsl_git_path,'.concepto','.dsl_cache');
 			await this.cache.init({
 				dir:cache_path,
-				expiredInterval: 2*60*60*1000 //expire within 2hrs 
+				expiredInterval: 3*60*60*1000 //expire within 2hrs 
 			});
 			// continue
 			this.x_flags.init_ok = true;
@@ -689,7 +689,7 @@ export default class concepto {
 		this.debug_time({ id:'process/writer' }); let tmp = {}, resp = { nodes:[] };
 		// read nodes
 		this.x_console.outT({ prefix:'process,yellow', message:`processing nodes ..`, color:'cyan' });
-		let x_dsl_nodes = await this.dsl_parser.getNodes({ level:2, nodes_raw:true });	
+		let x_dsl_nodes = await this.dsl_parser.getNodes({ level:2, nodes_raw:true, hash_content:true });	
 		this.debug('calling onPrepare');
 		this.debug_time({ id:'onPrepare' });
 		await this.onPrepare();
@@ -744,7 +744,8 @@ export default class concepto {
 		}
 		let counter_=0;
 		for (let level2 of x_dsl_nodes) {
-			//this.debug('node',node);
+			//this.debug('node',level2);
+			//break;
 			if (!this.x_config.debug) { 
 				if (this.progress_last) this.progress_last.raw().stop();
 				this.progress_multi[level2.text] = this.multibar.create(level2.nodes_raw.length-1, { total_:'', screen:'initializing..' });
@@ -752,8 +753,20 @@ export default class concepto {
 				this.progress_last = this.progress_multi[level2.text];
 				this.progress_last_screen = level2.text;
 			}
+			//cache: check if current node has any children that were modified since last time
+			let main = await this.cache.getItem(level2.hash_content);
 			// remove await when in production (use Promise.all after loop then)
-			let main = await this.process_main(level2,{});
+			if (!main) {
+				main = await this.process_main(level2,{});
+				await this.cache.setItem(level2.hash_content,main);
+				await this.cache.setItem(level2.hash_content+'_x_state',this.x_state);
+				//console.log('metido al cache:'+level2.id,main);
+			} else {
+				let cached_state = await this.cache.getItem(level2.hash_content+'_x_state');
+				this.x_state = {...this.x_state,...cached_state};
+				//console.log(level2.id,main);
+			}
+			//
 			if (!this.x_config.debug) {
 				this.progress_multi[level2.text].total(level2.nodes_raw.length-1);
 				this.progress_multi[level2.text].update(level2.nodes_raw.length-1, { screen:level2.text, sub:'', total_:'' });
@@ -793,6 +806,7 @@ export default class concepto {
 		//this.debug('after nodes processing, resp says:',resp);
 		//this.debug('app state says:',this.x_state);
 		await this.onEnd();
+		await this.cache.setItem('last_compile_date',new Date());
 		return resp;
 	}
 
