@@ -314,6 +314,18 @@ export default class concepto {
 			this.x_commands = {...this.x_commands,...command_func};
 		}
 		//add hash of x_commands to cache; if diferent from cache,invalidate node caches! @todo 10may21
+		let x_version = '';
+		if (this.x_commands.meta && this.x_commands.meta.version) x_version = this.x_commands.meta.version;
+		let obj_to_hash = x_version+JSON.stringify(this.x_commands, function(key, val) { return (typeof val === 'function') ? val.toString() : val; }, 4);
+		let commands_hash = await this.dsl_parser.hash(obj_to_hash);
+		let commands_cache = await this.cache.getItem('commands_hash');
+		if (x_version!='') x_version = 'v'+x_version+', ';
+		this.x_console.outT({ message:`x_commands ${x_version}hash: ${commands_hash}`, color:'white' });
+		if (commands_cache!=commands_hash) {
+			this.x_console.outT({ message:`cleaning cache! x_commands has changed hash!`, color:'yellow' });
+			await this.cache.clear();
+			await this.cache.setItem('commands_hash',commands_hash);
+		}
 	}
 
 	/**
