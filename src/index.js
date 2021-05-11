@@ -313,6 +313,7 @@ export default class concepto {
 		} else if (command_func && typeof command_func === 'object') {
 			this.x_commands = {...this.x_commands,...command_func};
 		}
+		//add hash of x_commands to cache; if diferent from cache,invalidate node caches! @todo 10may21
 	}
 
 	/**
@@ -331,10 +332,9 @@ export default class concepto {
 		}
 		let cache_key = node.id+node.date_modified.toString() //+node.nodes_raw.toString();
 		let t_cache = await this.cache.getItem(cache_key);
-		if (t_cache) { // node.id in this.x_memory_cache.findCommand
+		if (t_cache && ((Array.isArray(t_cache) && t_cache.length>0) || t_cache.data)) { // node.id in this.x_memory_cache.findCommand
 			if (show_debug) this.debug(`using memory_cache for findCommand for node ID ${node.id}`);
 			return t_cache;
-			//return this.x_memory_cache.findCommand[node.id];
 		} else {
 			if (show_debug) this.debug(`findCommand for node ID ${node.id}`);
 			let keys = 'x_icons,x_not_icons,x_not_empty,x_not_text_contains,x_empty,x_text_exact,x_text_contains,x_text_pattern,x_level,x_or_hasparent,x_all_hasparent,x_or_isparent';
@@ -590,7 +590,10 @@ export default class concepto {
 				resp=sorted;
 			}
 			//console.log(`findCommand resp`,resp);
-			await this.cache.setItem(cache_key,resp);
+			if ((Array.isArray(resp) && resp.length>0) || resp.data) {
+				//only add to cache, if at least 1 command was found.
+				await this.cache.setItem(cache_key,resp);
+			}
 			//this.x_memory_cache.findCommand[node.id] = resp;
 			return resp;
 		}
