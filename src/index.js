@@ -4,6 +4,8 @@
 * @module 	concepto
 **/
 
+//import commands from '../../vue_dsl/lib/commands';
+
 /**
  * A node object representation of a DSL node.
  * @typedef {Object} NodeDSL
@@ -43,6 +45,7 @@
 */
 //import dsl_parser from '../../dsl_parser/src/index'
 //import console_ from '../../console/src/index'
+
 export default class concepto {
 
 	constructor(file,config={}) {
@@ -316,15 +319,45 @@ export default class concepto {
 		//add hash of x_commands to cache; if diferent from cache,invalidate node caches! @todo 10may21
 		let x_version = '';
 		if (this.x_commands.meta && this.x_commands.meta.version) x_version = this.x_commands.meta.version;
-		let obj_to_hash = x_version+JSON.stringify(this.x_commands, function(key, val) { return (typeof val === 'function') ? val.toString() : val; }, 4);
-		let commands_hash = await this.dsl_parser.hash(obj_to_hash);
+		let x_cmds_hashes = {};
+		for (let x in this.x_commands) {
+			x_cmds_hashes[x] = await this.dsl_parser.hash(this.x_commands[x].func.toString());
+		}
+		//console.log('obj_to_hash',x_cmds_hashes);
+		let commands_hash = await this.dsl_parser.hash(x_cmds_hashes);
 		let commands_cache = await this.cache.getItem('commands_hash');
+		let commands_cached_hashes = await this.cache.getItem('commands_hashes');
 		if (x_version!='') x_version = 'v'+x_version+', ';
+		let changed_x_cmds = [];
 		this.x_console.outT({ message:`x_commands ${x_version}hash: ${commands_hash}`, color:'white' });
 		if (commands_cache!=commands_hash) {
-			this.x_console.outT({ message:`cleaning cache! x_commands has changed hash!`, color:'yellow' });
-			await this.cache.clear();
+			if (typeof commands_cached_hashes === 'object') {
+				//compare which x_commands changed
+				for (let x in x_cmds_hashes) {
+					if (x in commands_cached_hashes && commands_cached_hashes[x]!=x_cmds_hashes[x]) {
+						changed_x_cmds.push(x);
+					}
+				}
+				if (changed_x_cmds.length>0) this.x_console.outT({ message:`x_commands has changed hash! cleaning cache of x_commands: ${changed_x_cmds.join(',')}`, color:'yellow' });
+				//search which pages (within cache) are using the modified x_commands
+				let meta_cache = await this.cache.getItem('meta_cache');
+				if (meta_cache && typeof meta_cache === 'object' && Object.keys(meta_cache).length>0) {
+					for (let x in meta_cache) {
+						if (this.array_intersect(meta_cache[x].x_ids.split(','),changed_x_cmds).length>0) {
+							//remove page 'hashkey' from cache
+							this.x_console.outT({ message:`removing ${x} file info from cache ..`, color:'dim' });
+							await this.cache.removeItem(meta_cache[x].cachekey);
+						}
+					}
+				}
+			} else {
+				// if cached_hashses doesn't exist, clean everything from cache (should be first upgrade)
+				this.x_console.outT({ message:`x_commands has changed hash! cleaning all previous cache`, color:'yellow' });
+				await this.cache.clear();
+			}
+			//set new comparision to cache
 			await this.cache.setItem('commands_hash',commands_hash);
+			await this.cache.setItem('commands_hashes',x_cmds_hashes);
 		}
 	}
 
@@ -760,6 +793,9 @@ export default class concepto {
 			this.progress_multi['_total_'] = this.multibar.create(x_dsl_nodes.length-1, { total_:'x', screen:'initializing..' });
 		}
 		let counter_=0;
+		let meta_cache={};
+		let meta_cache_ = await this.cache.getItem('meta_cache');
+		if (meta_cache_) meta_cache = meta_cache_;
 		for (let level2 of x_dsl_nodes) {
 			//this.debug('node',level2);
 			//break;
@@ -778,6 +814,8 @@ export default class concepto {
 				if (main.error && main.error==true) {
 					//don't add main to cache if there was an error processing its inside.
 				} else {
+					//meta info for controlling cache
+					meta_cache[main.file] = { cachekey:level2.hash_content, x_ids:main.x_ids };
 					await this.cache.setItem(level2.hash_content,main);
 					await this.cache.setItem(level2.hash_content+'_x_state',this.x_state);
 				}
@@ -791,6 +829,8 @@ export default class concepto {
 					main = await this.process_main(level2,{});
 					if (main.error && main.error==true) {
 					} else {
+						//meta info for controlling cache
+						meta_cache[main.file] = { cachekey:level2.hash_content, x_ids:main.x_ids };
 						await this.cache.setItem(level2.hash_content,main);
 						await this.cache.setItem(level2.hash_content+'_x_state',this.x_state);
 					}	
@@ -838,6 +878,8 @@ export default class concepto {
 		//this.debug('app state says:',this.x_state);
 		await this.onEnd();
 		await this.cache.setItem('last_compile_date',new Date());
+		//add meta cache to cache
+		await this.cache.setItem('meta_cache',meta_cache);
 		return resp;
 	}
 
