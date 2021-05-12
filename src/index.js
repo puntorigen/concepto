@@ -321,7 +321,11 @@ export default class concepto {
 		if (this.x_commands.meta && this.x_commands.meta.version) x_version = this.x_commands.meta.version;
 		let x_cmds_hashes = {};
 		for (let x in this.x_commands) {
-			x_cmds_hashes[x] = await this.dsl_parser.hash(this.x_commands[x].func.toString());
+			if (x=='meta') {
+				x_cmds_hashes[x] = await this.dsl_parser.hash(this.x_commands[x].toString());
+			} else {
+				x_cmds_hashes[x] = await this.dsl_parser.hash(this.x_commands[x].func.toString());
+			}
 		}
 		//console.log('obj_to_hash',x_cmds_hashes);
 		let commands_hash = await this.dsl_parser.hash(x_cmds_hashes);
@@ -338,16 +342,22 @@ export default class concepto {
 						changed_x_cmds.push(x);
 					}
 				}
-				if (changed_x_cmds.length>0) this.x_console.outT({ message:`x_commands has changed hash! cleaning cache of x_commands: ${changed_x_cmds.join(',')}`, color:'yellow' });
-				//search which pages (within cache) are using the modified x_commands
-				let meta_cache = await this.cache.getItem('meta_cache');
-				if (meta_cache && typeof meta_cache === 'object' && Object.keys(meta_cache).length>0) {
-					for (let x in meta_cache) {
-						if (this.array_intersect(meta_cache[x].x_ids.split(','),changed_x_cmds).length>0) {
-							//remove page 'hashkey' from cache
-							this.x_console.outT({ message:`removing ${x} file info from cache ..`, color:'dim' });
-							await this.cache.removeItem(meta_cache[x].cachekey);
-							await this.cache.removeItem(meta_cache[x].cachekey+'_x_state');
+				if (changed_x_cmds.includes('meta')) {
+					//x_command version changed! wipe all cache
+					this.x_console.outT({ message:`x_commands version changed! wiping all cache`, color:'brightYellow' });
+					await this.cache.clear();
+				} else {
+					if (changed_x_cmds.length>0) this.x_console.outT({ message:`x_commands has changed hash! cleaning cache of x_commands: ${changed_x_cmds.join(',')}`, color:'yellow' });
+					//search which pages (within cache) are using the modified x_commands
+					let meta_cache = await this.cache.getItem('meta_cache');
+					if (meta_cache && typeof meta_cache === 'object' && Object.keys(meta_cache).length>0) {
+						for (let x in meta_cache) {
+							if (this.array_intersect(meta_cache[x].x_ids.split(','),changed_x_cmds).length>0) {
+								//remove page 'hashkey' from cache
+								this.x_console.outT({ message:`removing ${x} file info from cache ..`, color:'dim' });
+								await this.cache.removeItem(meta_cache[x].cachekey);
+								await this.cache.removeItem(meta_cache[x].cachekey+'_x_state');
+							}
 						}
 					}
 				}
