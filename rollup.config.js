@@ -1,6 +1,6 @@
 import babel            from '@rollup/plugin-babel';
 import { nodeResolve }  from '@rollup/plugin-node-resolve';
-import compiler         from '@ampproject/rollup-plugin-closure-compiler';
+//import compiler         from '@ampproject/rollup-plugin-closure-compiler';
 
 const config = {
   input: 'src/index.js',
@@ -26,7 +26,7 @@ const config = {
       exclude: '**/node_modules/**',
       babelHelpers: 'bundled',
     }),
-    compiler()
+    //compiler()
   ]
 };
 

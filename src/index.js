@@ -798,6 +798,7 @@ export default class concepto {
 		let meta_cache_ = await this.cache.getItem('meta_cache');
 		if (meta_cache_) meta_cache = meta_cache_;
 		let obj_diff = require('deep-object-diff').diff;
+		let deep = require('deepmerge');
 		for (let level2 of x_dsl_nodes) {
 			//this.debug('node',level2);
 			//break;
@@ -827,7 +828,7 @@ export default class concepto {
 				//console.log('metido al cache:'+level2.id,main);
 			} else {
 				let cached_state = await this.cache.getItem(level2.hash_content+'_x_state');
-				this.x_state = {...this.x_state,...cached_state};
+				this.x_state = deep.all([this.x_state, cached_state]);
 				if (main.error && main.error==true) {
 					await this.cache.removeItem(level2.hash_content);
 					//reprocess the removed failed cached node.
