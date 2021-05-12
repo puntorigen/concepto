@@ -347,6 +347,7 @@ export default class concepto {
 							//remove page 'hashkey' from cache
 							this.x_console.outT({ message:`removing ${x} file info from cache ..`, color:'dim' });
 							await this.cache.removeItem(meta_cache[x].cachekey);
+							await this.cache.removeItem(meta_cache[x].cachekey+'_x_state');
 						}
 					}
 				}
@@ -796,6 +797,7 @@ export default class concepto {
 		let meta_cache={};
 		let meta_cache_ = await this.cache.getItem('meta_cache');
 		if (meta_cache_) meta_cache = meta_cache_;
+		let obj_diff = require('deep-object-diff').diff;
 		for (let level2 of x_dsl_nodes) {
 			//this.debug('node',level2);
 			//break;
@@ -810,14 +812,17 @@ export default class concepto {
 			let main = await this.cache.getItem(level2.hash_content);
 			// remove await when in production (use Promise.all after loop then)
 			if (!main) {
+				let before_state = JSON.parse(JSON.stringify(this.x_state));
 				main = await this.process_main(level2,{});
+				let state_to_save = obj_diff(before_state,this.x_state);
+				//console.log('state_to_save',{ state_to_save });
 				if (main.error && main.error==true) {
 					//don't add main to cache if there was an error processing its inside.
 				} else {
 					//meta info for controlling cache
 					meta_cache[main.file] = { cachekey:level2.hash_content, x_ids:main.x_ids };
 					await this.cache.setItem(level2.hash_content,main);
-					await this.cache.setItem(level2.hash_content+'_x_state',this.x_state);
+					await this.cache.setItem(level2.hash_content+'_x_state',state_to_save);
 				}
 				//console.log('metido al cache:'+level2.id,main);
 			} else {
@@ -826,13 +831,16 @@ export default class concepto {
 				if (main.error && main.error==true) {
 					await this.cache.removeItem(level2.hash_content);
 					//reprocess the removed failed cached node.
+					let before_state = JSON.parse(JSON.stringify(this.x_state)); 
 					main = await this.process_main(level2,{});
+					let state_to_save = obj_diff(before_state,this.x_state);
+					//console.log('state_to_save2',{ state_to_save });
 					if (main.error && main.error==true) {
 					} else {
 						//meta info for controlling cache
 						meta_cache[main.file] = { cachekey:level2.hash_content, x_ids:main.x_ids };
 						await this.cache.setItem(level2.hash_content,main);
-						await this.cache.setItem(level2.hash_content+'_x_state',this.x_state);
+						await this.cache.setItem(level2.hash_content+'_x_state',state_to_save);
 					}	
 				}
 				//console.log(level2.id,main);
