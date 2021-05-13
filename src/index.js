@@ -322,7 +322,7 @@ export default class concepto {
 		let x_cmds_hashes = {};
 		for (let x in this.x_commands) {
 			if (x=='meta') {
-				x_cmds_hashes[x] = await this.dsl_parser.hash(this.x_commands[x].toString());
+				x_cmds_hashes[x] = await this.dsl_parser.hash(JSON.stringify(this.x_commands[x]));
 			} else {
 				x_cmds_hashes[x] = await this.dsl_parser.hash(this.x_commands[x].func.toString());
 			}
