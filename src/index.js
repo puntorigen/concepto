@@ -309,12 +309,30 @@ export default class concepto {
 		if (command_func && typeof command_func === 'function') { 
 			let t = await command_func(this);
 			if (typeof t === 'object') {
+				// if there was a meta, add new info as name child
+				if (this.x_commands && this.x_commands.meta && t.meta && t.meta.name) {
+					if  (!this.x_commands.meta.other) this.x_commands.meta.other={};
+					this.x_commands.meta.other[t.meta.name] = t.meta;
+					delete t.meta;
+				}
 				this.x_commands = {...this.x_commands,...t};
 			} else {
 				throw new Error('error! addCommands() argument doesn\'t reply with an Object');
 			}
+			if (t.meta && t.meta.version && t.meta.name) {
+				this.x_console.outT({ message:`x_commands '${t.meta.name}' v${t.meta.version} ready`, color:'brightYellow' });
+			}
 		} else if (command_func && typeof command_func === 'object') {
+			// if there was a meta, add new info as name child
+			if (this.x_commands && this.x_commands.meta && command_func.meta && command_func.meta.name) {
+				if  (!this.x_commands.meta.other) this.x_commands.meta.other={};
+				this.x_commands.meta.other[command_func.meta.name] = command_func.meta;
+				delete command_func.meta;
+			}
 			this.x_commands = {...this.x_commands,...command_func};
+			if (command_func.meta && command_func.meta.version && command_func.meta.name) {
+				this.x_console.outT({ message:`x_commands '${command_func.meta.name}' v${command_func.meta.version}' ready`, color:'brightYellow' });
+			}
 		}
 	}
 
@@ -324,8 +342,6 @@ export default class concepto {
 	*/
 	async cacheCommands() {
 		//add hash of x_commands to cache; if diferent from cache,invalidate node caches!
-		let x_version = '';
-		if (this.x_commands.meta && this.x_commands.meta.version) x_version = this.x_commands.meta.version;
 		let x_cmds_hashes = {};
 		for (let x in this.x_commands) {
 			if (x=='meta') {
@@ -338,9 +354,7 @@ export default class concepto {
 		let commands_hash = await this.dsl_parser.hash(x_cmds_hashes);
 		let commands_cache = await this.cache.getItem('commands_hash');
 		let commands_cached_hashes = await this.cache.getItem('commands_hashes');
-		if (x_version!='') x_version = 'v'+x_version;
 		let changed_x_cmds = [];
-		this.x_console.outT({ prefix:'cache,brightYellow', message:`x_commands ${x_version}`, color:'white' });
 		this.x_console.outT({ prefix:'cache,yellow', message:`x_commands hash: ${commands_hash}`, color:'dim' });
 		if (commands_cache!=commands_hash) {
 			if (typeof commands_cached_hashes === 'object') {
@@ -352,7 +366,7 @@ export default class concepto {
 				}
 				if (changed_x_cmds.includes('meta')) {
 					//x_command version changed! wipe all cache
-					this.x_console.outT({ prefix:'cache,yellow', message:`x_commands version changed! wiping all cache`, color:'brightYellow' });
+					this.x_console.outT({ prefix:'cache,yellow', message:`x_commands meta changed! wiping all cache`, color:'brightYellow' });
 					await this.cache.clear();
 				} else {
 					if (changed_x_cmds.length>0) this.x_console.outT({ prefix:'cache,yellow', message:`x_commands has changed hash! cleaning cache of x_commands: ${changed_x_cmds.join(',')}`, color:'yellow' });
