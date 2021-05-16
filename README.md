@@ -19,6 +19,7 @@ Concepto DSL Base Class: A base class (to be extended) for defining new language
         * [.onCreateFiles(processedNodes)](#module_concepto+onCreateFiles)
         * [.onEnd()](#module_concepto+onEnd)
         * [.addCommands(command_func)](#module_concepto+addCommands)
+        * [.cacheCommands()](#module_concepto+cacheCommands)
         * [.findCommand(node, [justone])](#module_concepto+findCommand) ⇒ <code>Command</code> \| <code>Array.&lt;Command&gt;</code>
         * [.findValidCommand(node, [object])](#module_concepto+findValidCommand) ⇒ <code>Command</code> \| <code>boolean</code>
         * [.process()](#module_concepto+process) ⇒ <code>Object</code>
@@ -169,6 +170,12 @@ Add commands for processing nodes with the current class
 | --- | --- | --- |
 | command_func | <code>function</code> | async function returning an object with commands objects ([Command](Command)) where each key is the command id, and its value a Command object. |
 
+<a name="module_concepto+cacheCommands"></a>
+
+### concepto.cacheCommands()
+Detects which x_commands changed their code since last persistant cache usage. To be called before process().
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
 <a name="module_concepto+findCommand"></a>
 
 ### concepto.findCommand(node, [justone]) ⇒ <code>Command</code> \| <code>Array.&lt;Command&gt;</code>

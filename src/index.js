@@ -316,7 +316,14 @@ export default class concepto {
 		} else if (command_func && typeof command_func === 'object') {
 			this.x_commands = {...this.x_commands,...command_func};
 		}
-		//add hash of x_commands to cache; if diferent from cache,invalidate node caches! @todo 10may21
+	}
+
+	/**
+	* Detects which x_commands changed their code since last persistant cache usage. To be called before process().
+	* @async
+	*/
+	async cacheCommands() {
+		//add hash of x_commands to cache; if diferent from cache,invalidate node caches!
 		let x_version = '';
 		if (this.x_commands.meta && this.x_commands.meta.version) x_version = this.x_commands.meta.version;
 		let x_cmds_hashes = {};
@@ -331,9 +338,10 @@ export default class concepto {
 		let commands_hash = await this.dsl_parser.hash(x_cmds_hashes);
 		let commands_cache = await this.cache.getItem('commands_hash');
 		let commands_cached_hashes = await this.cache.getItem('commands_hashes');
-		if (x_version!='') x_version = 'v'+x_version+', ';
+		if (x_version!='') x_version = 'v'+x_version;
 		let changed_x_cmds = [];
-		this.x_console.outT({ message:`x_commands ${x_version}hash: ${commands_hash}`, color:'white' });
+		this.x_console.outT({ prefix:'cache,brightYellow', message:`x_commands ${x_version}`, color:'white' });
+		this.x_console.outT({ prefix:'cache,yellow', message:`x_commands hash: ${commands_hash}`, color:'dim' });
 		if (commands_cache!=commands_hash) {
 			if (typeof commands_cached_hashes === 'object') {
 				//compare which x_commands changed
@@ -344,17 +352,17 @@ export default class concepto {
 				}
 				if (changed_x_cmds.includes('meta')) {
 					//x_command version changed! wipe all cache
-					this.x_console.outT({ message:`x_commands version changed! wiping all cache`, color:'brightYellow' });
+					this.x_console.outT({ prefix:'cache,yellow', message:`x_commands version changed! wiping all cache`, color:'brightYellow' });
 					await this.cache.clear();
 				} else {
-					if (changed_x_cmds.length>0) this.x_console.outT({ message:`x_commands has changed hash! cleaning cache of x_commands: ${changed_x_cmds.join(',')}`, color:'yellow' });
+					if (changed_x_cmds.length>0) this.x_console.outT({ prefix:'cache,yellow', message:`x_commands has changed hash! cleaning cache of x_commands: ${changed_x_cmds.join(',')}`, color:'yellow' });
 					//search which pages (within cache) are using the modified x_commands
 					let meta_cache = await this.cache.getItem('meta_cache');
 					if (meta_cache && typeof meta_cache === 'object' && Object.keys(meta_cache).length>0) {
 						for (let x in meta_cache) {
 							if (this.array_intersect(meta_cache[x].x_ids.split(','),changed_x_cmds).length>0) {
 								//remove page 'hashkey' from cache
-								this.x_console.outT({ message:`removing ${x} file info from cache ..`, color:'dim' });
+								this.x_console.outT({ prefix:'cache,yellow', message:`removing ${x} file info from cache ..`, color:'dim' });
 								await this.cache.removeItem(meta_cache[x].cachekey);
 								await this.cache.removeItem(meta_cache[x].cachekey+'_x_state');
 							}
@@ -363,7 +371,7 @@ export default class concepto {
 				}
 			} else {
 				// if cached_hashses doesn't exist, clean everything from cache (should be first upgrade)
-				this.x_console.outT({ message:`x_commands has changed hash! cleaning all previous cache`, color:'yellow' });
+				this.x_console.outT({ prefix:'cache,yellow', message:`x_commands has changed hash! cleaning all previous cache`, color:'yellow' });
 				await this.cache.clear();
 			}
 			//set new comparision to cache
@@ -745,7 +753,7 @@ export default class concepto {
 	* @return 	{Object}
 	*/
 	async process() {
-		
+		await this.cacheCommands();
 		if (!this.x_flags.init_ok) throw new Error('error! the first called method must be init()!');
 		this.debug_time({ id:'process/writer' }); let tmp = {}, resp = { nodes:[] };
 		// read nodes
