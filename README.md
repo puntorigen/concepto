@@ -496,5 +496,5 @@ A command object specifying requirements for a node to execute its function.
 
 * * *
 
-&copy; 2020 Pablo Schaffner &lt;pablo@puntorigen.com&gt;.
+&copy; 2020-2021 Pablo Schaffner &lt;pablo@puntorigen.com&gt;.
 Documented by [jsdoc-to-markdown](https://github.com/jsdoc2md/jsdoc-to-markdown).
