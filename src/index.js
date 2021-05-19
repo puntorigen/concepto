@@ -115,7 +115,15 @@ export default class concepto {
 			// @TODO create github compatible DSL
 			if (this.x_config.dsl_git) {
 				this.x_console.outT({ message:`creating git compatible DSL`, color:'green' });
-				let for_git = await this.dsl_parser.createGitVersion();
+				let for_git = await this.dsl_parser.createGitVersion(function($) {
+					//search aws node
+					let aws = $(`node[TEXT=aws] attribute[NAME*=access]`).toArray();
+					aws.map(function(elem) {
+						let cur = $(elem);
+						cur.parent('node').remove();
+					});
+					return $.html();
+				});
 				// save dsl git file
 				if (typeof this.x_config.dsl_git === 'boolean') {
 					//tmp.dsl_git_path = path.join(tmp.directory,'dsl_git');
