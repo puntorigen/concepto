@@ -921,7 +921,7 @@ export default class concepto {
 		} else {
 			// errors occurred
 			this.x_console.title({ title:`Interpreter ${this.x_config.class.toUpperCase()} ENDED with ERRORS.\nPlease check your console history.\nCompilation took: ${this.secsPassed_()}`, titleColor:'brightRed', color:'red' });	
-			await onErrors(errs);
+			await this.onErrors(errs);
 			//this.debug_table('Amount of Time Per Command');
 		}
 		// some debug
