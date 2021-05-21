@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "concepto",
-  "version": "1.6.6",
+  "version": "1.6.7",
   "description": "Punto Origen - ES6 Concepto Class Interface",
   "keywords": [
     "creador",
@@ -34,7 +34,8 @@
     "humanize-duration": "^3.25.2",
     "minimatch": "^3.0.4",
     "node-persist": "^3.1.0",
-    "open_console": "github:puntorigen4u/console"
+    "open_console": "github:puntorigen4u/console",
+    "print-code": "^1.0.2"
   },
   "devDependencies": {
     "@ampproject/rollup-plugin-closure-compiler": "^0.26.0",

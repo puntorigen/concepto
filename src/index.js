@@ -722,7 +722,7 @@ export default class concepto {
 					reply._f4e = commands_[0].x_id;
 					if (show_debug) this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[0].x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
 				} catch(test_err) {
-					if (show_debug) this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[0].x_id} ... ERROR! (nodeid:${node.id})`, color:'red' });
+					if (show_debug) this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[0].x_id} ... ERROR! (nodeid:${node.id})`, color:'brightRed' });
 					// @TODO emit('internal_error','findValidCommand')
 					reply.error = true;
 					reply.valid = false;
@@ -794,8 +794,10 @@ export default class concepto {
 					//color the progress bar
 					if (typeof data.error === 'undefined') data.error=false;
 					if (data.error && data.error==true) {
-						data.bar = data.funcs.colors.red(data.bar);
-						data.text = data.funcs.colors.red('processing error'); //+' '+data.funcs.symbols.fail;
+						data.bar = data.funcs.colors.brightRed(data.bar);
+						data.text = data.funcs.colors.brightRed('processing error'); //+' '+data.funcs.symbols.fail;
+						if (data.screen) data.screen = data.funcs.colors.brightRed(data.screen);
+						return data;
 					} else if (data.percentage<=20) {
 						data.bar = data.funcs.colors.magenta(data.bar);
 					} else if (data.percentage<=60) {
@@ -844,8 +846,8 @@ export default class concepto {
 			//break;
 			if (!this.x_config.debug) { 
 				if (this.progress_last) this.progress_last.raw().stop();
-				this.progress_multi[level2.text] = this.multibar.create(level2.nodes_raw.length-1, { total_:'', screen:'initializing..' });
-				this.progress_multi['_total_'].update(counter_, { total_:'x', screen:level2.text });
+				this.progress_multi[level2.text] = this.multibar.create(level2.nodes_raw.length-1, { total_:'', screen:'initializing..', error:false });
+				this.progress_multi['_total_'].update(counter_, { total_:'x', screen:level2.text, error:false });
 				this.progress_last = this.progress_multi[level2.text];
 				this.progress_last_screen = level2.text;
 			}
@@ -859,6 +861,8 @@ export default class concepto {
 				//console.log('state_to_save',{ state_to_save });
 				if (main.error && main.error==true) {
 					//don't add main to cache if there was an error processing its inside.
+					resp.nodes.push(main);
+					break;
 				} else {
 					//meta info for controlling cache
 					meta_cache[main.file] = { cachekey:level2.hash_content, x_ids:main.x_ids };
@@ -888,8 +892,14 @@ export default class concepto {
 			}
 			//
 			if (!this.x_config.debug) {
-				this.progress_multi[level2.text].total(level2.nodes_raw.length-1);
-				this.progress_multi[level2.text].update(level2.nodes_raw.length-1, { screen:level2.text, sub:'', total_:'' });
+				if (main.error && main.error==true) {
+					//this.progress_multi['_total_'].update(counter_, { screen:'ERROR', error:true });
+					//break;
+					this.progress_multi[level2.text].raw().stop();
+				} else {
+					this.progress_multi[level2.text].total(level2.nodes_raw.length-1);
+					this.progress_multi[level2.text].update(level2.nodes_raw.length-1, { screen:level2.text, sub:'', total_:'' });	
+				}
 			}
 			// append to resp
 			resp.nodes.push(main);
@@ -921,7 +931,7 @@ export default class concepto {
 		} else {
 			// errors occurred
 			this.x_console.title({ title:`Interpreter ${this.x_config.class.toUpperCase()} ENDED with ERRORS.\nPlease check your console history.\nCompilation took: ${this.secsPassed_()}`, titleColor:'brightRed', color:'red' });	
-			await this.onErrors(errs);
+			//await this.onErrors(errs);
 			//this.debug_table('Amount of Time Per Command');
 		}
 		// some debug
@@ -970,7 +980,7 @@ export default class concepto {
 				} else if (real2.error==true) {
 					if (!this.x_config.debug) {
 						this.progress_last.total(xx);
-						this.progress_last.update(xx, { screen:'ERROR', error:true });
+						this.progress_last.update(xx, { screen:this.progress_last_screen, error:true });
 					}
 					this.x_console.outT({ message:`error: Executing func x_command:${real2.x_id} for node: id:${real.id}, level ${real.level}, text: ${real.text}.`, data:{ id:real.id, level:real.level, text:real.text, data:real2.catch, x_command_state:new_state }});
 					await this.onErrors([`Error executing func for x_command:${real2.x_id} for node id ${real.id}, text: ${real.text} `]);
@@ -981,6 +991,37 @@ export default class concepto {
 			}
 		}
 		return resp;
+	}
+
+	async showLineError(error) {
+		let error_info = { line:-1, col:-1, file:null, message:error.toString() };
+		let raw_tmp = error.stack;
+		let print_code = require('print-code');
+		if (raw_tmp.includes('(')) {
+			let tmp = raw_tmp.split('(')[1];
+			error_info.file = tmp.split(':')[0];
+			error_info.line = parseInt(tmp.split(':')[1]);
+			error_info.col = parseInt(tmp.split(':').pop().split(')')[0]);
+		}
+		if (error_info.file) {
+			let fs = require('fs').promises;
+			let colors = require('colors/safe');
+			//try {
+				let cmds_code = await fs.readFile(error_info.file,'utf-8');
+				let toshow = print_code(cmds_code)
+								.highlight(error_info.line,error_info.line)
+								.slice(error_info.line-3,error_info.line+4)
+								.max_columns(200)
+								.arrow_mark(error_info.line,error_info.col)
+								.get();
+				this.x_console.out({ message:'An error ocurred on file:', color:'red' });
+				this.x_console.out({ message:error_info.file, color:'brightCyan' });
+				this.x_console.out({ message:error_info.message, color:'brightYellow' });
+				console.log(colors.bgBlack(colors.yellow((toshow))));
+				//this.x_console.out({ message:'\n \n'+toshow, color:'dim' });
+			//}
+		}
+		//
 	}
 
 	async process_main(node,custom_state) {
@@ -1021,8 +1062,15 @@ export default class concepto {
 				resp.code += resp.close;
 				resp.x_ids = resp.x_ids.join(',');
 			} else if (test.error==true) {
-				this.x_console.outT({ message:`error: Executing func x_command:${test.x_id} for node: id:${node.id}, level ${node.level}, text: ${node.text}.`, data:{ id:node.id, level:node.level, text:node.text, catch:test.catch, x_command_state:test.state }});
+				this.x_console.outT({ message:`node text: ${node.text}`, color:'red' });
+				//this.x_console.outT({ message:`error: Executing func x_command:${test.x_id} for node: id:${node.id}, level ${node.level}, text: ${node.text}.`, data:{ id:node.id, level:node.level, text:node.text, catch:test.catch, x_command_state:test.state }});
 				await this.onErrors([`Error executing func for x_command:${test.x_id} for node id ${node.id}, text: ${node.text} `]);
+				if (!this.x_config.debug) {
+					this.progress_last.total(2);
+					this.progress_last.update(1, { screen:this.progress_last_screen+'\n', error:true });
+				}
+				// improved error logging
+				await this.showLineError(test.catch);
 				resp.valid=false, resp.hasChildren=false, resp.error=true;
 			} else {
 				this.x_console.outT({ message:'error: FATAL, no method found for node processing.', data:{ id:node.id, level:node.level, text:node.text } });
