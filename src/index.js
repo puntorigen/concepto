@@ -904,10 +904,11 @@ export default class concepto {
 		//resp.nodes = await Promise.all(resp.nodes);
 		this.debug_timeEnd({ id:'process/writer' });
 		// check if there was some error
-		let were_errors = false;
+		let were_errors = false, errs=[];
 		resp.nodes.map(function(x) {
 			if (x.error==true) {
 				were_errors=true;
+				errs.push(x);
 				return false;
 			}
 		});
@@ -920,6 +921,7 @@ export default class concepto {
 		} else {
 			// errors occurred
 			this.x_console.title({ title:`Interpreter ${this.x_config.class.toUpperCase()} ENDED with ERRORS.\nPlease check your console history.\nCompilation took: ${this.secsPassed_()}`, titleColor:'brightRed', color:'red' });	
+			await onErrors(errs);
 			//this.debug_table('Amount of Time Per Command');
 		}
 		// some debug
