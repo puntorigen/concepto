@@ -350,8 +350,14 @@ export default class concepto {
 	*/
 	async cacheCommands() {
 		//add hash of x_commands to cache; if diferent from cache,invalidate node caches!
-		let x_cmds_hashes = {};
+		let x_cmds_hashes = {}, x_watches = {};
 		for (let x in this.x_commands) {
+			if (this.x_commands[x].x_watch) {
+				let watched = this.x_commands[x].x_watch.split(',');
+				for (let xi in watched) {
+					x_watches[watched[xi].trim()] = x;
+				}
+			}
 			if (x=='meta') {
 				x_cmds_hashes[x] = await this.dsl_parser.hash(JSON.stringify(this.x_commands[x]));
 			} else {
@@ -370,6 +376,12 @@ export default class concepto {
 				for (let x in x_cmds_hashes) {
 					if (x in commands_cached_hashes && commands_cached_hashes[x]!=x_cmds_hashes[x]) {
 						changed_x_cmds.push(x);
+						// search x within x_watches, if x is found, also add that cmd (value) to be cleaned from cache
+						if (x in x_watches) {
+							if (!changed_x_cmds.includes(x_watches[x])) {
+								changed_x_cmds.push(x_watches[x]);
+							}
+						}
 					}
 				}
 				if (changed_x_cmds.includes('meta')) {
