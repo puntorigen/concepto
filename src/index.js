@@ -122,6 +122,13 @@ export default class concepto {
 						let cur = $(elem);
 						cur.parent('node').remove();
 					});
+					//remove nodes with secret icon within config node
+					let secret_config = $(`node[TEXT=config] icon[BUILTIN=password]`).toArray();
+					secret_config.map(function(elem) {
+						let cur = $(elem);
+						cur.parent('node').remove();
+					});
+					//return modified
 					return $.html();
 				});
 				// save dsl git file
@@ -132,7 +139,8 @@ export default class concepto {
 					/*try { 
 						await fs.mkdir(tmp.dsl_git_path);
 					} catch(cpath_err) {}*/
-					let git_target = path.join(tmp.dsl_git_path,'vue_git.dsl'); //,path.basename(this.x_flags.dsl)
+					//get dsl filename - this.x_flags.dsl
+					let git_target = path.join(tmp.dsl_git_path,path.basename(this.x_flags.dsl).replace('.dsl','_git.dsl')); //,path.basename(this.x_flags.dsl)
 					await fs.writeFile(git_target,for_git,'utf-8');
 					this.debug(`dsl_git file saved as: ${git_target}`);
 				} else if (typeof this.x_config.dsl_git === 'function') {
