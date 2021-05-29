@@ -724,7 +724,9 @@ export default class concepto {
 		} else {
 			if (show_debug) this.debug({ message:`findValidCommand called for node ${node.id}, level:${node.level}, text:${node.text}`, color:'yellow' });
 			let reply={};
+			//this.debug('findValidCommand, before findCommand for node '+node.id);
 			let commands_ = await this.findCommand({node,justone:false,show_debug:show_debug});
+			//this.debug('findValidCommand, after findCommand for node '+node.id);
 			// @TODO debug and test
 			if (commands_.length==0) {
 				this.debug({ message:'findValidCommand: no command found.', color:'red' });
@@ -980,11 +982,14 @@ export default class concepto {
 			}
 			for (let sublevel of sub_nodes) {
 				xx+=1;
+				//this.debug('sub_process before getNode sublevel.id:'+sublevel.id);
 				let real = await this.dsl_parser.getNode({ id:sublevel.id, nodes_raw:true, recurse:false });
+				//this.debug('sub_process before findValidCommand node id:'+real.id);
 				let real2 = await this.findValidCommand({ node:real, object:false, x_command_shared_state:new_state });
 				if (!this.x_config.debug) {
 					this.progress_last.update(xx, { screen:this.progress_last_screen, sub:real2.x_id, total_:'' });
 				}
+				//this.debug('sub_process after findValidCommand');
 				//console.log('sub_process->findValidCommand node:'+real.text,real2);
 				//if (nodei.state) new_state = {...new_state, ...nodei.state, ...real2.state}; // inherint state from last command if defined
 				if (real2.state) new_state = {...new_state, ...real2.state}; // inherint state from last command if defined
@@ -995,6 +1000,7 @@ export default class concepto {
 					resp.init += real2.exec.init;
 					resp.code += real2.exec.open;
 					if (!resp.x_ids) resp.x_ids=[]; resp.x_ids.push(real2.x_id);
+					//this.debug('sub_process before new sub_process sublevel id:'+sublevel.id);
 					resp = await this.sub_process(resp,sublevel,new_state);
 					resp.code += real2.exec.close;
 				} else if (real2.error==true) {
@@ -1293,7 +1299,7 @@ export default class concepto {
 	* @param 	{string}	x_id	- Command object x_id to test for
 	* @return 	{Boolean}
 	*/
-	async hasBrotherID(id=this.throwIfMissing('id'),x_id=this.throwIfMissing('x_id')) {
+	async hasBrotherID(id=this.throwIfMissing('id-brotherID'),x_id=this.throwIfMissing('x_id')) {
 		// @TODO test it after having 'real' commands on some parser 3-ago-20
 		if ((id+x_id) in this.x_memory_cache.hasBrotherID) {
 			return this.x_memory_cache.hasBrotherID[id+x_id];
@@ -1318,7 +1324,7 @@ export default class concepto {
 	* @param 	{string}	id		- ID of NodeDSL object to query
 	* @return 	{Boolean}
 	*/
-	async hasBrotherBefore(id=this.throwIfMissing('id')) {
+	async hasBrotherBefore(id=this.throwIfMissing('id-brotherBefore')) {
 		if (id in this.x_memory_cache.hasBrotherBefore) {
 			return this.x_memory_cache.hasBrotherBefore[id];
 		} else {
@@ -1334,7 +1340,7 @@ export default class concepto {
 	* @param 	{string}	id		- ID of NodeDSL object to query
 	* @return 	{Boolean}
 	*/
-	async hasBrotherNext(id=this.throwIfMissing('id')) {
+	async hasBrotherNext(id=this.throwIfMissing('id - BrotherNext')) {
 		if (id in this.x_memory_cache.hasBrotherNext) {
 			return this.x_memory_cache.hasBrotherNext[id];
 		} else {
@@ -1351,7 +1357,7 @@ export default class concepto {
 	* @param 	{string}	x_id	- Command object x_id to test for
 	* @return 	{Boolean}
 	*/
-	async isExactParentID(id=this.throwIfMissing('id'),x_id=this.throwIfMissing('x_id')) {
+	async isExactParentID(id=this.throwIfMissing('id-ExactParent'),x_id=this.throwIfMissing('x_id')) {
 		// @TODO test it after having 'real' commands on some parser 4-ago-20
 		if ((id+x_id) in this.x_memory_cache.isExactParentID) {
 			return this.x_memory_cache.isExactParentID[id+x_id];
@@ -1374,7 +1380,7 @@ export default class concepto {
 	* @param 	{string}	x_id	- Command object x_id to test for
 	* @return 	{Boolean}
 	*/
-	async hasParentID(id=this.throwIfMissing('id'),x_id=this.throwIfMissing('x_id'),onlyTrueIfAll=false) {
+	async hasParentID(id=this.throwIfMissing('id-ParentID'),x_id=this.throwIfMissing('x_id'),onlyTrueIfAll=false) {
 		// @TODO test it after having 'real' commands on some parser aug-4-20, fixed on aug-15-20
 		let x_ids = x_id.split(',');
 		let parents = await this.dsl_parser.getParentNodesIDs({ id, array:true });
@@ -1411,12 +1417,12 @@ export default class concepto {
 	* @param 	{Boolean}	array	- If true, returns array of objects with x_id and ids, instead of a list of NodeDSL ids.
 	* @return 	{string|Object[]}
 	*/
-	async getParentIDs(id=this.throwIfMissing('id'), array=false) {
+	async getParentIDs(id=this.throwIfMissing('id-ParentIDs'), array=false) {
 		// @TODO test it after having 'real' commands on some parser 4-ago-20
 		let parents = await this.dsl_parser.getParentNodesIDs({ id, array:true });
 		let resp = [];
 		for (let parent_id of parents) {
-			let node = await this.dsl_parser.getNode({ parent_id, recurse:false });
+			let node = await this.dsl_parser.getNode({ id:parent_id, recurse:false });
 			let command = await this.findValidCommand({ node, show_debug:false });
 			if (command && array) {
 				resp.push({ id:parent_id, x_id:command.x_id });
@@ -1434,7 +1440,7 @@ export default class concepto {
 	* @param 	{string}	id		- ID of NodeDSL object to query
 	* @return 	{Object[]}
 	*/
-	async getParentIDs2Array(id=this.throwIfMissing('id')) {
+	async getParentIDs2Array(id=this.throwIfMissing('id - ParentIDs2Array')) {
 		return await this.getParentIDs(id,true);
 	}
 
@@ -1446,7 +1452,7 @@ export default class concepto {
 	* @return 	{Object[]}
 	* @deprecated
 	*/
-	async getParentIDs2ArrayWXID(id=this.throwIfMissing('id')) {
+	async getParentIDs2ArrayWXID(id=this.throwIfMissing('id - ParentIDs2ArrayWXID')) {
 		// this is only used in ti.cfc: def_textonly (just for back-compatibility in case needed);
 		// @deprecated 4-ago-2020
 		let parents = await this.getParentIDs(id,true);
@@ -1478,7 +1484,7 @@ export default class concepto {
 	* @param 	{Object}	struct		- Object with keys and values to transform from.
 	* @return 	{string}
 	*/
-	struct2params(struct=this.throwIfMissing('id')) {
+	struct2params(struct=this.throwIfMissing('id - struct2params')) {
 		let resp=[];
 		for (let [key, value] of Object.entries(struct)) {
 			if (typeof value !== 'object' && typeof value !== 'function' && typeof value !== 'undefined') {
