@@ -159,6 +159,10 @@ export default class concepto {
 				dir:cache_path,
 				expiredInterval: 3*60*60*1000 //expire within 2hrs 
 			});
+			if (this.x_config.clean) {
+				this.x_console.outT({ message:`cleaning cache as requested ..`, color:'brightCyan' });	
+				await this.cache.clear();
+			}
 			// continue
 			this.x_flags.init_ok = true;
 			try {
