@@ -99,7 +99,7 @@ export default class concepto {
 			let path = require('path'), fs = require('fs').promises, tmp = {};
 			// show title
 			this.x_console.title({ 
-				title: `DSL Interpreter ${this.x_config.class}\ninit:compiling file:\n${this.x_flags.dsl}`, 
+				title: `DSL Interpreter ${this.x_config.class.toUpperCase()}\ninit:compiling file:\n${this.x_flags.dsl}`, 
 				color: 'cyan',
 				config: { align:'left' }
 			});
