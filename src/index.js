@@ -362,12 +362,20 @@ export default class concepto {
 	*/
 	async cacheCommands() {
 		//add hash of x_commands to cache; if diferent from cache,invalidate node caches!
-		let x_cmds_hashes = {}, x_watches = {};
+		let x_cmds_hashes = {}, x_watches = {}, watched_vars={};
+		let safe = require('safe-eval');
 		for (let x in this.x_commands) {
 			if (this.x_commands[x].x_watch) {
 				let watched = this.x_commands[x].x_watch.split(',');
 				for (let xi in watched) {
-					x_watches[watched[xi].trim()] = x;
+					let key = watched[xi];
+					if (key.includes('x_state.')) {
+						//this is a var value watch, not command
+						if (!watched_vars[x]) watched_vars[x]={};
+						watched_vars[x][key.trim()]=safe('this.'+key.trim(),this);
+					} else {
+						x_watches[watched[xi].trim()] = x;
+					}
 				}
 			}
 			if (x=='meta') {
@@ -381,8 +389,12 @@ export default class concepto {
 		let commands_cache = await this.cache.getItem('commands_hash');
 		let commands_cached_hashes = await this.cache.getItem('commands_hashes');
 		let changed_x_cmds = [];
+		let watched_vars_hash_now = await this.dsl_parser.hash(watched_vars);
+		let watched_vars_hash_cache = await this.cache.getItem('watched_vars_cache');
+		let watched_vars_cache = await this.cache.getItem('watched_vars');
+		//console.log('PABLO debug: watched_vars_now',{current:watched_vars,cache:watched_vars_cache});
 		this.x_console.outT({ prefix:'cache,yellow', message:`x_commands hash: ${commands_hash}`, color:'dim' });
-		if (commands_cache!=commands_hash) {
+		if (commands_cache!=commands_hash || watched_vars_hash_now!=watched_vars_hash_cache) {
 			if (typeof commands_cached_hashes === 'object') {
 				//compare which x_commands changed
 				for (let x in x_cmds_hashes) {
@@ -392,6 +404,15 @@ export default class concepto {
 						if (x in x_watches) {
 							if (!changed_x_cmds.includes(x_watches[x])) {
 								changed_x_cmds.push(x_watches[x]);
+							}
+						}
+					}
+					// search x (cmd) is within watched_vars_cache, search var keys: if value of varkey in cache if diff from actual value, erase cmd from cache
+					if (watched_vars_cache && x in watched_vars_cache && x in watched_vars) {
+						for (let varkey in watched_vars_cache[x]) {
+							if (watched_vars[x][varkey]!=watched_vars_cache[x][varkey]) {
+								this.x_console.outT({ prefix:'cache,yellow', message:`watched var value by ${x} changed! requesting rebuild of its instances`, color:'brightYellow' });
+								changed_x_cmds.push(x);
 							}
 						}
 					}
@@ -421,6 +442,8 @@ export default class concepto {
 				await this.cache.clear();
 			}
 			//set new comparision to cache
+			await this.cache.setItem('watched_vars',watched_vars);	
+			await this.cache.setItem('watched_vars_hash_now',watched_vars_hash_now);	
 			await this.cache.setItem('commands_hash',commands_hash);
 			await this.cache.setItem('commands_hashes',x_cmds_hashes);
 		}
