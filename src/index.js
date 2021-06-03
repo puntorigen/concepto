@@ -784,27 +784,29 @@ export default class concepto {
 				// test each command
 				for (let qm_index in commands_) {
 					let qm = commands_[qm_index];
-					try {
-						let test = await this.x_commands[qm.x_id].func(node,x_command_shared_state);
-						if (test && test.valid && test.valid==true) {
-							if (show_debug) this.debug({ message:`findValidCommand: ${parseInt(qm_index)+1}/${commands_.length} testing command ${qm.x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
-							if (show_debug) this.debug({ message:'---------------------', time:false });
-							if (object) {//==true) { -this needs further testing 27abr21
-								reply=test;
-							} else {
-								// @TODO test if _f4e is used; because its ugly
-								reply=qm;
-								reply.exec=test;
-								reply._f4e=qm.x_id;
+					if (this.x_commands[qm.x_id]) {
+						try {
+							let test = await this.x_commands[qm.x_id].func(node,x_command_shared_state);
+							if (test && test.valid && test.valid==true) {
+								if (show_debug) this.debug({ message:`findValidCommand: ${parseInt(qm_index)+1}/${commands_.length} testing command ${qm.x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
+								if (show_debug) this.debug({ message:'---------------------', time:false });
+								if (object) {//==true) { -this needs further testing 27abr21
+									reply=test;
+								} else {
+									// @TODO test if _f4e is used; because its ugly
+									reply=qm;
+									reply.exec=test;
+									reply._f4e=qm.x_id;
+								}
+								break;
 							}
-							break;
+						} catch(test_err1) {
+							if (show_debug) this.debug({ message:`findValidCommand: error executing command ${qm} (nodeid:${node.id})`, data:test_err1, color:'red' });
+							reply.error = true;
+							reply.valid = false;
+							reply.catch = test_err1;
+							// @TODO we should throw an error, so our parents catch it (9-AGO-20) and break the loop
 						}
-					} catch(test_err1) {
-						if (show_debug) this.debug({ message:`findValidCommand: error executing command ${qm} (nodeid:${node.id})`, data:test_err1, color:'red' });
-						reply.error = true;
-						reply.valid = false;
-						reply.catch = test_err1;
-						// @TODO we should throw an error, so our parents catch it (9-AGO-20) and break the loop
 					}
 					await setImmediatePromise();
 				}
