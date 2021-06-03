@@ -759,7 +759,7 @@ export default class concepto {
 				this.debug({ message:'findValidCommand: no command found.', color:'red' });
 				reply.error=true;
 				reply.catch='no command found';
-			} else if (commands_.length==1) {
+			} else if (commands_.length==1 && commands_[0].x_id!='constructor') {
 				reply = {...commands_[0]};
 				// try executing the node on the found commands_
 				try {
