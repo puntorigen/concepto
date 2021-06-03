@@ -801,7 +801,8 @@ export default class concepto {
 								break;
 							}
 						} catch(test_err1) {
-							if (show_debug) this.debug({ message:`findValidCommand: error executing command ${qm} (nodeid:${node.id})`, data:test_err1, color:'red' });
+							if (show_debug) this.debug({ message:`findValidCommand: error executing command ${qm} (nodeid:${node.id})`, color:'red' });
+							await this.showLineError(test_err1);
 							reply.error = true;
 							reply.valid = false;
 							reply.catch = test_err1;
