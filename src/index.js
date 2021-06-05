@@ -777,6 +777,7 @@ export default class concepto {
 					if (show_debug) this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[0].x_id} ... VALID MATCH FOUND! (nodeid:${node.id})`, color:'green' });
 				} catch(test_err) {
 					if (show_debug) this.debug({ message:`findValidCommand: 1/1 applying command ${commands_[0].x_id} ... ERROR! (nodeid:${node.id})`, color:'brightRed' });
+					await this.showLineError(test_err);
 					// @TODO emit('internal_error','findValidCommand')
 					reply.error = true;
 					reply.valid = false;
