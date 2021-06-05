@@ -1059,7 +1059,7 @@ export default class concepto {
 		let error_info = { line:-1, col:-1, file:null, message:error.toString() };
 		let raw_tmp = error.stack;
 		let print_code = require('print-code');
-		if (raw_tmp.includes('(')) {
+		if (typeof raw_tmp == 'string' && raw_tmp.includes('(')) {
 			let tmp = raw_tmp.split('(')[1];
 			error_info.file = tmp.split(':')[0];
 			error_info.line = parseInt(tmp.split(':')[1]);
