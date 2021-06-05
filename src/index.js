@@ -372,7 +372,11 @@ export default class concepto {
 					if (key.includes('x_state.')) {
 						//this is a var value watch, not command
 						if (!watched_vars[x]) watched_vars[x]={};
-						watched_vars[x][key.trim()]=safe('this.'+key.trim(),this);
+						try {
+							watched_vars[x][key.trim()]=safe('this.'+key.trim(),this);
+						} catch(doesnt_exist) {
+							watched_vars[x][key.trim()]='';
+						}
 					} else {
 						x_watches[watched[xi].trim()] = x;
 					}
