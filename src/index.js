@@ -475,6 +475,7 @@ export default class concepto {
 			let node_features = {...command_requires1}; 
 			let command_defaults = {...command_requires1};
 			let def_matched = setObjectKeys(keys,true), comm;
+			delete this.x_commands['constructor']; //4-jun-21 @todo double check this; maybe we should use a cloned var
 			// iterate through commands
 			for (let key in this.x_commands) {
 				//let comm_keys = Object.keys(this.x_commands[key]);
