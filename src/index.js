@@ -184,6 +184,7 @@ export default class concepto {
 			// continue
 			if (this.x_config.justgit && this.x_config.justgit==true) {
 				this.x_console.out({ message:`Stopping after creating DSL GIT version as requested!`, color:'brightCyan'});
+				process.exit(1);
 			} else {
 				this.x_flags.init_ok = true;
 				try {
