@@ -805,7 +805,7 @@ export default class concepto {
 					reply.error = true;
 					reply.valid = false;
 					reply.catch = test_err;
-					//throw new Error(test_err); // @TODO we should throw an error, so our parents catch it (9-AGO-20)
+					//throw new Error(`executing ${reply.x_id}:`+test_err); // @TODO we should throw an error, so our parents catch it (9-AGO-20)
 				}
 			} else {
 				// more than one command found
@@ -1079,14 +1079,21 @@ export default class concepto {
 	}
 
 	async showLineError(error) {
-		let error_info = { line:-1, col:-1, file:null, message:error.toString() };
+		let error_info = { line:-1, col:-1, message:error.toString() };
 		let raw_tmp = error.stack;
 		let print_code = require('print-code');
-		if (typeof raw_tmp == 'string' && raw_tmp.includes('(')) {
-			let tmp = raw_tmp.split('(')[1];
+		if (typeof raw_tmp == 'string' && raw_tmp.includes('commands.js')) {
+			let extract = require('extractjs')();
+			let elements = extract(`at {path}commands.js:{line}:{col}\n`,raw_tmp);
+			//console.log('Pablo debug - showLine elements',elements);
+			error_info.file = elements.path+'commands.js';
+			error_info.line = elements.line;
+			error_info.col = elements.col;
+			/*let tmp = raw_tmp.split('(')[1];
 			error_info.file = tmp.split(':')[0];
 			error_info.line = parseInt(tmp.split(':')[1]);
 			error_info.col = parseInt(tmp.split(':').pop().split(')')[0]);
+			*/
 		}
 		if (error_info.file) {
 			let fs = require('fs').promises;
