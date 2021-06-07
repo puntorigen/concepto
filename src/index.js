@@ -116,17 +116,35 @@ export default class concepto {
 			if (this.x_config.dsl_git) {
 				this.x_console.outT({ message:`creating git compatible DSL`, color:'green' });
 				let for_git = await this.dsl_parser.createGitVersion(function($) {
-					//search aws node
+					//search aws node (even if it doesn't have the secret icon)
 					let aws = $(`node[TEXT=aws] attribute[NAME*=access]`).toArray();
 					aws.map(function(elem) {
 						let cur = $(elem);
-						cur.parent('node').remove();
+						//cur.parent('node').remove();
+						let dad = cur.parent('node');
+						dad.find('attribute').map(function(a,a_elem) {
+							let att = $(a_elem);
+							att.attr('VALUE','xxxxxxxx');
+						});
+						dad.append(`<icon BUILTIN="button_cancel"/>`);
 					});
 					//remove nodes with secret icon within config node
+					/*
 					let secret_config = $(`node[TEXT=config] icon[BUILTIN=password]`).toArray();
 					secret_config.map(function(elem) {
 						let cur = $(elem);
 						cur.parent('node').remove();
+					}); */
+					//add cancel icon to nodes with secret icon, and replace attr values.
+					let secret_config = $(`node[TEXT=config] icon[BUILTIN=password]`).toArray();
+					secret_config.map(function(elem) {
+						let cur = $(elem);
+						let dad = cur.parent('node');
+						dad.find('attribute').map(function(a,a_elem) {
+							let att = $(a_elem);
+							att.attr('VALUE','xxxx');
+						});
+						dad.append(`<icon BUILTIN="button_cancel"/>`);
 					});
 					//return modified
 					return $.html();
