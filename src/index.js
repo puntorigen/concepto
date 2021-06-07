@@ -182,11 +182,15 @@ export default class concepto {
 				await this.cache.clear();
 			}
 			// continue
-			this.x_flags.init_ok = true;
-			try {
-				await this.onInit();
-			} catch(eeee) {
-				this.x_console.out({ message:`onInit() ${eeee}`, color:'red' });
+			if (this.x_config.justgit && this.x_config.justgit==true) {
+				this.x_console.out({ message:`Stopping after creating DSL GIT version as requested!`, color:'brightCyan'});
+			} else {
+				this.x_flags.init_ok = true;
+				try {
+					await this.onInit();
+				} catch(eeee) {
+					this.x_console.out({ message:`onInit() ${eeee}`, color:'red' });
+				}
 			}
 		} else {
 			// this was already called!
