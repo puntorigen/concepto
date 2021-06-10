@@ -144,7 +144,7 @@ export default class concepto {
 							let att = $(a_elem);
 							att.attr('VALUE','xxxx');
 						});
-						dad.append(`<icon BUILTIN="button_cancel"/>`);
+						//dad.append(`<icon BUILTIN="button_cancel"/>`);
 					});
 					//return modified
 					return $.html();
