@@ -452,6 +452,7 @@ export default class concepto {
 					if (changed_x_cmds.length>0) this.x_console.outT({ prefix:'cache,yellow', message:`x_commands has changed hash! cleaning cache of x_commands: ${changed_x_cmds.join(',')}`, color:'yellow' });
 					//search which pages (within cache) are using the modified x_commands
 					let meta_cache = await this.cache.getItem('meta_cache');
+					let amount_cleaned = 0;
 					if (meta_cache && typeof meta_cache === 'object' && Object.keys(meta_cache).length>0) {
 						for (let x in meta_cache) {
 							if (this.array_intersect(meta_cache[x].x_ids.split(','),changed_x_cmds).length>0) {
@@ -459,9 +460,16 @@ export default class concepto {
 								this.x_console.outT({ prefix:'cache,yellow', message:`removing ${x} file info from cache ..`, color:'dim' });
 								await this.cache.removeItem(meta_cache[x].cachekey);
 								await this.cache.removeItem(meta_cache[x].cachekey+'_x_state');
+								amount_cleaned+=1;
 							}
 						}
 					}
+					//sleep a little depending on how much was clen...
+					let sleep=function(ms) {
+						return new Promise(resolve => setTimeout(resolve, ms));
+					}
+					await sleep(5*amount_cleaned);
+					//
 				}
 			} else {
 				// if cached_hashses doesn't exist, clean everything from cache (should be first upgrade)
