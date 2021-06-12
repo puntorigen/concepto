@@ -114,7 +114,7 @@ export default class concepto {
 			this.x_console.outT({ message:`time passed since start .. ${this.secsPassed_()}`, color:'cyan' });
 			// @TODO create github compatible DSL
 			if (this.x_config.dsl_git) {
-				let for_git = await this.dsl_parser.createGitVersion(function($) {
+				let for_git = await this.dsl_parser.createGitVersion(false, function($) {
 					//search aws node (even if it doesn't have the secret icon)
 					let aws = $(`node[TEXT=aws] attribute[NAME*=access]`).toArray();
 					aws.map(function(elem) {
