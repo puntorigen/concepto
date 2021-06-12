@@ -114,19 +114,18 @@ export default class concepto {
 			this.x_console.outT({ message:`time passed since start .. ${this.secsPassed_()}`, color:'cyan' });
 			// @TODO create github compatible DSL
 			if (this.x_config.dsl_git) {
-				this.x_console.outT({ message:`creating git compatible DSL`, color:'green' });
 				let for_git = await this.dsl_parser.createGitVersion(function($) {
 					//search aws node (even if it doesn't have the secret icon)
 					let aws = $(`node[TEXT=aws] attribute[NAME*=access]`).toArray();
 					aws.map(function(elem) {
 						let cur = $(elem);
-						//cur.parent('node').remove();
-						let dad = cur.parent('node');
+						cur.parent('node').remove();
+						/*let dad = cur.parent('node');
 						dad.find('attribute').map(function(a,a_elem) {
 							let att = $(a_elem);
 							att.attr('VALUE','xxxxxxxx');
 						});
-						dad.append(`<icon BUILTIN="button_cancel"/>`);
+						dad.append(`<icon BUILTIN="button_cancel"/>`);*/
 					});
 					//remove nodes with secret icon within config node
 					/*
@@ -140,11 +139,12 @@ export default class concepto {
 					secret_config.map(function(elem) {
 						let cur = $(elem);
 						let dad = cur.parent('node');
-						dad.find('attribute').map(function(a,a_elem) {
+						dad.remove();
+						/*dad.find('attribute').map(function(a,a_elem) {
 							let att = $(a_elem);
 							att.attr('VALUE','xxxx');
 						});
-						//dad.append(`<icon BUILTIN="button_cancel"/>`);
+						dad.append(`<icon BUILTIN="button_cancel"/>`);*/
 					});
 					//return modified
 					return $.html();
@@ -152,6 +152,7 @@ export default class concepto {
 				// save dsl git file
 				if (typeof this.x_config.dsl_git === 'boolean') {
 					//tmp.dsl_git_path = path.join(tmp.directory,'dsl_git');
+					this.x_console.outT({ message:`creating git compatible DSL`, color:'green' });
 					tmp.dsl_git_path = tmp.directory;
 					this.debug(`dsl_git dir`,tmp.dsl_git_path);
 					/*try { 
@@ -161,18 +162,20 @@ export default class concepto {
 					let git_target = path.join(tmp.dsl_git_path,path.basename(this.x_flags.dsl).replace('.dsl','_git.dsl')); //,path.basename(this.x_flags.dsl)
 					await fs.writeFile(git_target,for_git,'utf-8');
 					this.debug(`dsl_git file saved as: ${git_target}`);
+					this.x_console.outT({ message:`ready github compatible DSL`, color:'green' });
+					//
 				} else if (typeof this.x_config.dsl_git === 'function') {
 					// if dsl_git is a function, call it with out ready content; maybe to send it though sockets, further processing or saving in a diferent location
 					this.debug(`calling dsl_git custom method ${this.x_config.dsl_git.name}`);
 					await this.x_config.dsl_git(for_git);
 				}
 				//
-				this.x_console.outT({ message:`ready github compatible DSL`, color:'green' });
+				
 			}
 			//config persistant cache
 			this.x_console.outT({ message:`configuring cache ..`, color:'cyan' });
 			this.cache = require('node-persist');
-			let cache_path = path.join(tmp.dsl_git_path,'.concepto','.dsl_cache');
+			let cache_path = path.join(tmp.directory,'.concepto','.dsl_cache');
 			await this.cache.init({
 				dir:cache_path,
 				expiredInterval: 3*60*60*1000 //expire within 2hrs 
