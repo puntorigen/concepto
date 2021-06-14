@@ -877,7 +877,7 @@ export default class concepto {
 		this.debug_time({ id:'onPrepare' });
 		await this.onPrepare();
 		this.debug_timeEnd({ id:'onPrepare' });
-		if (!this.x_config.debug) { 
+		if (!this.x_config.debug && !this.x_config.silent) { 
 			this.progress_multi = {};
 			this.multibar = this.x_console.progress({
 				format: `{text} {bar} | {screen}`,
@@ -936,7 +936,7 @@ export default class concepto {
 		for (let level2 of x_dsl_nodes) {
 			//this.debug('node',level2);
 			//break;
-			if (!this.x_config.debug) { 
+			if (!this.x_config.debug && !this.x_config.silent) { 
 				if (this.progress_last) this.progress_last.raw().stop();
 				this.progress_multi[level2.text] = this.multibar.create(level2.nodes_raw.length-1, { total_:'', screen:'initializing..', error:false });
 				this.progress_multi['_total_'].update(counter_, { total_:'x', screen:level2.text, error:false });
@@ -983,7 +983,7 @@ export default class concepto {
 				//console.log(level2.id,main);
 			}
 			//
-			if (!this.x_config.debug) {
+			if (!this.x_config.debug && !this.x_config.silent) {
 				if (main.error && main.error==true) {
 					//this.progress_multi['_total_'].update(counter_, { screen:'ERROR', error:true });
 					//break;
@@ -998,7 +998,7 @@ export default class concepto {
 			await setImmediatePromise();
 			counter_+=1;
 		}
-		if (!this.x_config.debug) {
+		if (!this.x_config.debug && !this.x_config.silent) {
 			this.progress_multi['_total_'].raw().stop(); //.remove();
 			this.multibar.stop();
 		}
@@ -1074,7 +1074,7 @@ export default class concepto {
 					resp = await this.sub_process(resp,sublevel,new_state);
 					resp.code += real2.exec.close;
 				} else if (real2.error==true) {
-					if (!this.x_config.debug) {
+					if (!this.x_config.debug && !this.x_config.silent) {
 						this.progress_last.total(xx);
 						this.progress_last.update(xx, { screen:this.progress_last_screen, error:true });
 					}
@@ -1142,7 +1142,7 @@ export default class concepto {
 			x_ids: [],
 			subnodes: node.nodes_raw.length
 		};
-		if (this.x_config.debug) {
+		if (this.x_config.debug && !this.x_config.silent) {
 			this.x_console.outT({ prefix:'process,yellow', message:`processing node ${node.text} ..`, color:'yellow' });
 		}
 		//
@@ -1263,9 +1263,9 @@ export default class concepto {
     	} else {
     		params={ message, data };
     	}
-		if (this.x_config.debug && params.time) {
+		if (this.x_config.debug && params.time && !this.x_config.silent) {
 			this.x_console.outT({...{ prefix:'debug,dim', color:'dim' },...params});
-		} else if (this.x_config.debug) {
+		} else if (this.x_config.debug && !this.x_config.silent) {
 			this.x_console.out({...{ prefix:'debug,dim', color:'dim' },...params});
 		}
 	}
@@ -1312,10 +1312,10 @@ export default class concepto {
 				if (typeof this.x_time_stats.times[filter_key] === 'undefined' && filter_key.indexOf('def_')!=-1) {
 					this.x_time_stats.times[filter_key] = new Date();
 					this.x_time_stats.tables[filter_key] = { command:filter_key, calls:0, average_call:0, total_ms:0 };
-				} else if (this.x_config.debug==true) {
+				} else if (this.x_config.debug==true && !this.x_config.silent) {
 					this.x_console.time({...arguments[0]});	
 				}
-			} else if (this.x_config.debug==true) {
+			} else if (this.x_config.debug==true && !this.x_config.silent) {
 				this.x_console.time({...arguments[0]});
 			}
 		}
@@ -1343,7 +1343,7 @@ export default class concepto {
 					this.x_time_stats.tables[filter_key].total_ms = timePassed;
 					this.x_time_stats.tables[filter_key].average_call = Math.round(this.x_time_stats.tables[filter_key].total_ms/this.x_time_stats.tables[filter_key].calls);
 				}
-			} else if (this.x_config.debug==true) {
+			} else if (this.x_config.debug==true && !this.x_config.silent) {
 				this.x_console.timeEnd({...{ color:'dim',prefix:'debug,dim' },...arguments[0]});
 			}
 		}
