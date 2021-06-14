@@ -1046,7 +1046,7 @@ export default class concepto {
 			let new_state = {}, xx=0;
 			if (nodei.state) new_state = {...nodei.state};
 			new_state = {...new_state,...custom_state};
-			if (!this.x_config.debug) {
+			if (!this.x_config.debug && !this.x_config.silent) {
 				this.progress_last.total(sub_nodes.length-1);
 				//this.progress_multi['_total_'].raw().updateETA();
 			}
@@ -1056,7 +1056,7 @@ export default class concepto {
 				let real = await this.dsl_parser.getNode({ id:sublevel.id, nodes_raw:true, recurse:false });
 				//this.debug('sub_process before findValidCommand node id:'+real.id);
 				let real2 = await this.findValidCommand({ node:real, object:false, x_command_shared_state:new_state });
-				if (!this.x_config.debug) {
+				if (!this.x_config.debug && !this.x_config.silent) {
 					this.progress_last.update(xx, { screen:this.progress_last_screen, sub:real2.x_id, total_:'' });
 				}
 				//this.debug('sub_process after findValidCommand');
@@ -1168,7 +1168,7 @@ export default class concepto {
 				this.x_console.outT({ message:`node text: ${node.text}`, color:'red' });
 				//this.x_console.outT({ message:`error: Executing func x_command:${test.x_id} for node: id:${node.id}, level ${node.level}, text: ${node.text}.`, data:{ id:node.id, level:node.level, text:node.text, catch:test.catch, x_command_state:test.state }});
 				await this.onErrors([`Error executing func for x_command:${test.x_id} for node id ${node.id}, text: ${node.text} `]);
-				if (!this.x_config.debug) {
+				if (!this.x_config.debug && !this.x_config.silent) {
 					this.progress_last.total(2);
 					this.progress_last.update(1, { screen:this.progress_last_screen+'\n', error:true });
 				}
