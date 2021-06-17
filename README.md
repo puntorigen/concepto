@@ -29,6 +29,7 @@ Concepto DSL Base Class: A base class (to be extended) for defining new language
         * [.array_union(arr1, arr2)](#module_concepto+array_union) ⇒ <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code>
         * [.debug(message, [data])](#module_concepto+debug)
         * [.debug_time(id)](#module_concepto+debug_time)
+        * [.exists(dir_or_file)](#module_concepto+exists) ⇒ <code>boolean</code>
         * [.debug_timeEnd(id)](#module_concepto+debug_timeEnd)
         * [.debug_table(title)](#module_concepto+debug_table)
         * [.hasBrotherID(id, x_id)](#module_concepto+hasBrotherID) ⇒ <code>Boolean</code>
@@ -278,6 +279,17 @@ Helper method for measuring (start) time in ms from this method until debug_time
 | Param | Type | Description |
 | --- | --- | --- |
 | id | <code>string</code> | id key (which can also have spaces and/or symbols) with a unique id to identify the stopwatch. |
+
+<a name="module_concepto+exists"></a>
+
+### concepto.exists(dir_or_file) ⇒ <code>boolean</code>
+Helper to test if a given file exists or not
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| dir_or_file | <code>string</code> | full directory or file to test |
 
 <a name="module_concepto+debug_timeEnd"></a>
 

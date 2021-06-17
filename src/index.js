@@ -1106,7 +1106,7 @@ export default class concepto {
 			error_info.col = parseInt(tmp.split(':').pop().split(')')[0]);
 			*/
 		}
-		if (error_info.file) {
+		if (error_info.file && this.exists(error_info.file)) {
 			let fs = require('fs').promises;
 			let colors = require('colors/safe');
 			//try {
@@ -1123,6 +1123,8 @@ export default class concepto {
 				console.log(colors.bgBlack(colors.yellow((toshow))));
 				//this.x_console.out({ message:'\n \n'+toshow, color:'dim' });
 			//}
+		} else {
+			console.log('referenced file with error not found',raw_tmp);
 		}
 		//
 	}
@@ -1326,6 +1328,21 @@ export default class concepto {
 			this.x_console.time({...arguments[0]});
 		}
 	}*/
+
+	/**
+	* Helper to test if a given file exists or not
+	* @param {string} 		dir_or_file 	- full directory or file to test
+	* @return {boolean}
+	*/
+	async exists(dir_or_file) {
+        let fs = require('fs').promises;
+        try {
+            await fs.access(dir_or_file);
+            return true;
+        } catch(e) {
+            return false;
+        }
+    }
 
 	/**
 	* Helper method for measuring (end) time in ms from the call of debug_time() method.
