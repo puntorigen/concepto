@@ -1096,17 +1096,15 @@ export default class concepto {
 		if (typeof raw_tmp == 'string' && raw_tmp.includes('commands.js')) {
 			let extract = require('extractjs')();
 			let elements = extract(`at {path}commands.js:{line}:{col}\n`,raw_tmp);
+			if (elements.path.includes(' (')) {
+				elements = extract(` ({path}commands.js:{line}:{col}\n`,raw_tmp);
+			}
 			//console.log('Pablo debug - showLine elements',elements);
 			error_info.file = elements.path+'commands.js';
 			error_info.line = elements.line;
 			error_info.col = elements.col;
-			/*let tmp = raw_tmp.split('(')[1];
-			error_info.file = tmp.split(':')[0];
-			error_info.line = parseInt(tmp.split(':')[1]);
-			error_info.col = parseInt(tmp.split(':').pop().split(')')[0]);
-			*/
 		}
-		if (error_info.file && this.exists(error_info.file)) {
+		if (error_info.file && (await this.exists(error_info.file))==true) {
 			let fs = require('fs').promises;
 			let colors = require('colors/safe');
 			//try {
