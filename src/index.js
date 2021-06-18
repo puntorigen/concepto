@@ -1029,10 +1029,10 @@ export default class concepto {
 		// some debug
 		//this.debug('after nodes processing, resp says:',resp);
 		//this.debug('app state says:',this.x_state);
-		await this.onEnd();
 		await this.cache.setItem('last_compile_date',new Date());
 		//add meta cache to cache
 		await this.cache.setItem('meta_cache',meta_cache);
+		await this.onEnd();
 		return resp;
 	}
 
