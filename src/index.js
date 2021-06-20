@@ -184,6 +184,108 @@ export default class concepto {
 				this.x_console.outT({ message:`cleaning cache as requested ..`, color:'brightCyan' });	
 				await this.cache.clear();
 			}
+			//diff_from arg (creates {class}_diff.dsl)
+			if (this.x_config.diff_from) {
+				this.x_console.outT({ message: `(as requested) creating ${this.x_config.class}_diff.dsl map from ${this.x_config.diff_from}`, color:'brightCyan' });
+				let fs = require('fs').promises, path = require('path');
+				//read non _git .dsl file source
+				let non_git = path.join(tmp.directory,path.basename(this.x_flags.dsl).replace('_git.dsl','.dsl'));
+				let non_git_content = await fs.readFile(non_git,'utf-8');
+				//read given diff_from file
+				let from_dsl = path.resolve(this.x_config.diff_from);
+				let from_content = await fs.readFile(from_dsl,'utf-8');
+				//create _diff.dsl file
+				let diff_dsl = path.join(tmp.directory,path.basename(this.x_flags.dsl).replace('_git.dsl','.dsl').replace('.dsl','_diff.dsl'));
+				//get differences
+				let compare = await this.dsl_parser.getDifferences(from_content,non_git_content);
+				//
+				let diff = { content:'' };
+				//parse diff content
+				diff.parser = new dsl_parser({ file:non_git, config:{ cancelled:false, debug:false } });
+				try {
+					await diff.parser.process();
+				} catch(d_err) {
+				}
+				diff.content = diff.parser.$.html();
+				//remove all previous clouds from diff.content
+				let clouds = diff.parser.$(`cloud`);
+				clouds.each(function(i,elem) {
+					let cur = diff.parser.$(elem);
+					cur.replaceWith('');
+				});
+				//for each added IDs, search and add a Green CLOUD (#d9f7be, green-2)
+				for (let key in compare.added) {
+					diff.content = await diff.parser.editNode({ node_id:key, 
+						data:function(x) {
+							let new_note = `!! ADDED NODE !!`;
+							if (x.text_note.trim().trim()!='') {
+								new_note = `${new_note}\n${x.text_note}`;
+							}
+							return {
+								text_note: new_note,
+								cloud: {
+									used:true,
+									bgcolor:'#d9f7be'
+								}
+							}
+						} 
+					});
+				}
+				//for each modified IDs, search and add a Yellow CLOUD (gold-2)
+				for (let key in compare.modified) {
+					diff.content = await diff.parser.editNode({ node_id:key, 
+						data:function(x) {
+							let new_note = `!! MODIFIED NODE !!`;
+							if (x.text_note.trim().trim()!='') {
+								new_note = `${new_note}\n${x.text_note}`;
+							}
+							return {
+								text_note: new_note,
+								cloud: {
+									used: true,
+									bgcolor: '#fff1b8'
+								}
+							}
+						} 
+					});
+				}
+				//for each deleted IDs, get deleted nodes from the source and add it to diff with a red CLOUD
+				if (Object.keys(compare.deleted).length>0) {
+					// get deleted node from 'from_dsl' source file
+					let from = {};
+					from.parser = new dsl_parser({ file:from_dsl, config:{ cancelled:false, debug:false } });
+					try {
+						await from.parser.process();
+					} catch(d_err) {
+					}
+					//process
+					for (let key in compare.deleted) {
+						let deleted_node = await from.parser.getNode({ id:key, recurse:true });
+						deleted_node.icons = [...deleted_node.icons,'button_cancel'];
+						deleted_node.cloud = {
+							used: true,
+							bgcolor: '#ffa39e'
+						};
+						if (deleted_node.text_note.trim()!='') {
+							deleted_node.nodes.push({
+								text:'!! DELETED NODE !!',
+								icons:['button_cancel']
+							});
+						}
+						// get parent node of deleted_node (to add it to that location within diff)
+						let dad = await from.parser.getParentNode({ id:key });
+						// add deleted_node as a child of dad within diff
+						diff.content = await diff.parser.addNode({ parent_id:dad.id, node:deleted_node });
+					}
+				}
+				//console.log('new diff content',diff.content);
+				//console.log('compare results',compare);
+				//save new eb_diff.dsl content from differences
+				await fs.writeFile(diff_dsl,diff.content,'utf-8');
+				this.x_console.outT({ message: `(as requested) file ${this.x_config.class}_diff.dsl created`, color:'brightCyan' });
+				//console.log('compare',compare);
+				//process.exit(1000);
+			}
 			// continue
 			if (this.x_config.justgit && this.x_config.justgit==true) {
 				this.x_console.out({ message:`Stopping after creating DSL GIT version as requested!`, color:'brightCyan'});
