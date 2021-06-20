@@ -196,17 +196,60 @@ export default class concepto {
 				let from_content = await fs.readFile(from_dsl,'utf-8');
 				//create _diff.dsl file
 				let diff_dsl = path.join(tmp.directory,path.basename(this.x_flags.dsl).replace('_git.dsl','.dsl').replace('.dsl','_diff.dsl'));
+				//@todo clean CREATED and MODIFIED dates and FOLDED attributos from from_content and non_git_content, before getting differences
+				let files = {};
+				files.from_parser = new dsl_parser({ file:from_dsl, config:{ cancelled:false, debug:false } });
+				try {
+					await files.from_parser.process();
+				} catch(d_err) {
+				}
+				files.from_parser.$(`node`).each(function(i,elem) {
+					let me = files.from_parser;
+					me.$(elem).attr("CREATED", "1552681669876");
+					me.$(elem).attr("MODIFIED", "1552681669876");
+					me.$(elem).removeAttr("VSHIFT");
+					me.$(elem).removeAttr("HGAP");
+					me.$(elem).removeAttr("FOLDED");
+					//if (i>1 && me.$(elem).attr('FOLDED')) me.$(elem).attr("FOLDED","true");
+				});
+				files.from_compare = files.from_parser.$.html();
+				files.ng_parser = new dsl_parser({ file:non_git, config:{ cancelled:false, debug:false } });
+				try {
+					await files.ng_parser.process();
+				} catch(d_err) {
+				}
+				files.ng_compare_bak = files.ng_parser.$.html();
+				files.ng_parser.$(`node`).each(function(i,elem) {
+					let me = files.ng_parser;
+					me.$(elem).attr("CREATED", "1552681669876");
+					me.$(elem).attr("MODIFIED", "1552681669876");
+					me.$(elem).removeAttr("VSHIFT");
+					me.$(elem).removeAttr("HGAP");
+					me.$(elem).removeAttr("FOLDED");
+					//if (i>1 && me.$(elem).attr('FOLDED')) me.$(elem).attr("FOLDED","true");
+				});
+				files.ng_compare = files.ng_parser.$.html();
 				//get differences
-				let compare = await this.dsl_parser.getDifferences(from_content,non_git_content);
+				//let compare = await this.dsl_parser.getDifferences(from_content,non_git_content);
+				let compare = await this.dsl_parser.getDifferences(files.from_compare,files.ng_compare);
+				// reparse.... @todo improve!!!! ... this is just a hack to maintain original format and dates without taking those into account for the diff
+				files.from_parser = new dsl_parser({ file:from_dsl, config:{ cancelled:false, debug:false } });
+				try {
+					await files.from_parser.process();
+				} catch(d_err) {
+				}
+				files.from_compare = files.from_parser.$.html();
+				files.ng_parser = new dsl_parser({ file:non_git, config:{ cancelled:false, debug:false } });
+				try {
+					await files.ng_parser.process();
+				} catch(d_err) {
+				}
+				files.ng_compare = files.ng_parser.$.html();
 				//
 				let diff = { content:'' };
 				//parse diff content
-				diff.parser = new dsl_parser({ file:non_git, config:{ cancelled:false, debug:false } });
-				try {
-					await diff.parser.process();
-				} catch(d_err) {
-				}
-				diff.content = diff.parser.$.html();
+				diff.parser = files.ng_parser;
+				diff.content = files.ng_compare; //diff.parser.$.html();
 				//remove all previous clouds from diff.content
 				let clouds = diff.parser.$(`cloud`);
 				clouds.each(function(i,elem) {
@@ -217,12 +260,8 @@ export default class concepto {
 				for (let key in compare.added) {
 					diff.content = await diff.parser.editNode({ node_id:key, 
 						data:function(x) {
-							let new_note = `!! ADDED NODE !!`;
-							if (x.text_note.trim().trim()!='') {
-								new_note = `${new_note}\n${x.text_note}`;
-							}
 							return {
-								text_note: new_note,
+								text_note_html: { p:['ADDED NODE',...compare.added[key],x.text_note] },
 								cloud: {
 									used:true,
 									bgcolor:'#d9f7be'
@@ -230,17 +269,25 @@ export default class concepto {
 							}
 						} 
 					});
+					// get first dad node of 'key' to highlight it as containing a diff
+					/*let dads = await diff.parser.getParentNodesIDs({ id:key, array:true });
+					let first_node = dads.pop();
+					diff.content = await diff.parser.editNode({ node_id:first_node, 
+						data:{
+								text_note: `!! THIS NODE CONTAINS A *NEW* NODE INSIDE !!`,
+								cloud: {
+									used:true,
+									bgcolor:'#f6ffed' //green-1
+								}
+							}
+					});*/
 				}
 				//for each modified IDs, search and add a Yellow CLOUD (gold-2)
 				for (let key in compare.modified) {
 					diff.content = await diff.parser.editNode({ node_id:key, 
 						data:function(x) {
-							let new_note = `!! MODIFIED NODE !!`;
-							if (x.text_note.trim().trim()!='') {
-								new_note = `${new_note}\n${x.text_note}`;
-							}
 							return {
-								text_note: new_note,
+								text_note_html: { p:['MODIFIED NODE',...compare.modified[key],x.text_note] },
 								cloud: {
 									used: true,
 									bgcolor: '#fff1b8'
@@ -248,16 +295,25 @@ export default class concepto {
 							}
 						} 
 					});
+					// get first dad node of 'key' to highlight it as containing a diff
+					/*
+					let dads = await diff.parser.getParentNodesIDs({ id:key, array:true });
+					let first_node = dads.pop();
+					diff.content = await diff.parser.editNode({ node_id:first_node, 
+						data:{
+								text_note: `!! THIS NODE CONTAINS A *MODIFIED* NODE INSIDE !!`,
+								cloud: {
+									used:true,
+									bgcolor:'#fffbe6' //gold-1
+								}
+							}
+					});*/
 				}
 				//for each deleted IDs, get deleted nodes from the source and add it to diff with a red CLOUD
 				if (Object.keys(compare.deleted).length>0) {
 					// get deleted node from 'from_dsl' source file
 					let from = {};
-					from.parser = new dsl_parser({ file:from_dsl, config:{ cancelled:false, debug:false } });
-					try {
-						await from.parser.process();
-					} catch(d_err) {
-					}
+					from.parser = files.from_parser;
 					//process
 					for (let key in compare.deleted) {
 						let deleted_node = await from.parser.getNode({ id:key, recurse:true });
