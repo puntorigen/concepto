@@ -267,7 +267,7 @@ export default class concepto {
 					diff.content = await diff.parser.editNode({ node_id:key, 
 						data:function(x) {
 							return {
-								text_note_html: { p:['ADDED NODE',...compare.added[key],x.text_note] },
+								text_note_html: { p:['ADDED NODE',x.text_note] },
 								cloud: {
 									used:true,
 									bgcolor:'#d9f7be'
@@ -316,24 +316,30 @@ export default class concepto {
 					});*/
 				}
 				//for each deleted IDs, get deleted nodes from the source and add it to diff with a red CLOUD
+				let from = {};
+				from.parser = files.from_parser;
+				//21jun21: get parents of each deleted id, if any parent is within the deleted keys, remove the tested id
+				for (let key in compare.deleted) {
+					let parents = await from.parser.getParentNodesIDs({ id:key, array:true });
+					let deleted = Object.keys(compare.deleted);
+					let intersect = this.array_intersect(parents,deleted);
+					if (intersect.length>0) {
+						//there is a dad of ourself within compare.deleted; erase ourselfs
+						delete compare.deleted[key];
+					}
+				};
+				//
 				if (Object.keys(compare.deleted).length>0) {
 					// get deleted node from 'from_dsl' source file
-					let from = {};
-					from.parser = files.from_parser;
 					//process
 					for (let key in compare.deleted) {
 						let deleted_node = await from.parser.getNode({ id:key, recurse:true });
 						deleted_node.icons = [...deleted_node.icons,'button_cancel'];
 						deleted_node.cloud = {
 							used: true,
-							bgcolor: '#ffa39e'
+							bgcolor: '#ffa39e',
 						};
-						if (deleted_node.text_note.trim()!='') {
-							deleted_node.nodes.push({
-								text:'!! DELETED NODE !!',
-								icons:['button_cancel']
-							});
-						}
+						deleted_node.text_note_html = { p:['!! DELETED NODE !!','',deleted_node.text_note] };
 						// get parent node of deleted_node (to add it to that location within diff)
 						let dad = await from.parser.getParentNode({ id:key });
 						// add deleted_node as a child of dad within diff
