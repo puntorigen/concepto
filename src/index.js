@@ -210,7 +210,10 @@ export default class concepto {
 					me.$(elem).removeAttr("VSHIFT");
 					me.$(elem).removeAttr("HGAP");
 					me.$(elem).removeAttr("FOLDED");
-					//if (i>1 && me.$(elem).attr('FOLDED')) me.$(elem).attr("FOLDED","true");
+				});
+				//remove attribute_layout tags from comparision
+				files.from_parser.$(`attribute_layout`).each(function(i,elem) {
+					files.from_parser.$(elem).replaceWith('');
 				});
 				files.from_compare = files.from_parser.$.html();
 				files.ng_parser = new dsl_parser({ file:non_git, config:{ cancelled:false, debug:false } });
@@ -226,7 +229,10 @@ export default class concepto {
 					me.$(elem).removeAttr("VSHIFT");
 					me.$(elem).removeAttr("HGAP");
 					me.$(elem).removeAttr("FOLDED");
-					//if (i>1 && me.$(elem).attr('FOLDED')) me.$(elem).attr("FOLDED","true");
+				});
+				//remove attribute_layout tags from comparision
+				files.ng_parser.$(`attribute_layout`).each(function(i,elem) {
+					files.ng_parser.$(elem).replaceWith('');
 				});
 				files.ng_compare = files.ng_parser.$.html();
 				//get differences
