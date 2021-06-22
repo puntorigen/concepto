@@ -354,6 +354,34 @@ export default class concepto {
 				//console.log('compare',compare);
 				//process.exit(1000);
 			}
+			//export_html arg (creates an html representation of given dsl file)
+			if (this.x_config.export_html) {
+				this.x_console.outT({ message: `(as requested) creating html version map to ${this.x_config.export_html}`, color:'brightCyan' });
+				let fs = require('fs').promises, path = require('path');
+				//use given dsl not, non git -> this.x_flags.dsl
+				//transform path given to abs path
+				let target_path = path.join(tmp.directory,'out'); //set default target path
+				if (this.x_config.export_html!='') {
+					target_path = path.resolve(this.x_config.export_html);
+				}
+				//create target path if it doesn't exist
+				/*
+				try { 
+					await fs.mkdir(target_path);
+				} catch(cpath_err) {}*/
+				//get our assets path
+				let concepto_loc = path.dirname(require.resolve('concepto/package.json'));
+				let export_ = path.join(concepto_loc,'lib','export');
+				let runtime_ = path.join(export_,'runtime');
+				//copy runtime assets to target_path
+				//let copy = require('recursive-copy');
+				//await copy(runtime_, target_path);
+				this.x_console.out({ message:`testing --export-html`, data:{concepto_loc,export_,runtime_,target_path}, color:'brightYellow'});
+				process.exit(1500);
+				//transform to .dsl file to html
+				//search img src nodes within dsl file and copy found images to target_path
+				//ready
+			}
 			// continue
 			if (this.x_config.justgit && this.x_config.justgit==true) {
 				this.x_console.out({ message:`Stopping after creating DSL GIT version as requested!`, color:'brightCyan'});

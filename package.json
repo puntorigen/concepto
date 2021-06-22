@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "concepto",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "Punto Origen - ES6 Concepto Class Interface",
   "keywords": [
     "creador",
@@ -37,6 +37,7 @@
     "node-persist": "^3.1.0",
     "open_console": "github:puntorigen4u/console",
     "print-code": "^1.0.2",
+    "recursive-copy": "^2.0.11",
     "safe-eval": "^0.4.1"
   },
   "devDependencies": {
@@ -47,7 +48,8 @@
     "@rollup/plugin-node-resolve": "^8.4.0",
     "cross-env": "^7.0.2",
     "jsdoc-to-markdown": "^6.0.1",
-    "rollup": "^2.26.3"
+    "rollup": "^2.26.3",
+    "rollup-plugin-copy-assets": "^2.0.3"
   },
   "scarfSettings": {
     "enabled": false
