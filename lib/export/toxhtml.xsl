@@ -9,27 +9,24 @@ See "LICENCE.MIT" or http://www.opensource.org/licenses/mit-license.php for deta
  for the specific language governing rights and limitations under the
  License.
 
-mmTree - alternate XHTML+Javascript export style sheet for FreeMind.
+mmTree - alternate XHTML+Javascript export style sheet for Concepto DSL.
 
- Miika Nurminen (minurmin@cc.jyu.fi) 12.12.2003.
+Pablo Schaffner (pablo@puntorigen.com) 22.06.2021.
 
-Transforms Freemind (0.6.7 - 0.8.0) mm file to XHTML 1.1 with JavaScript-based keyboard navigation (MarkTree).
-Output is valid (possibly apart HTML entered by user in Freemind).
+Transforms Concepto DSL (1.2.5) dsl file to XHTML 1.1 with JavaScript-based keyboard navigation (MarkTree).
+Output is valid (possibly apart HTML entered by user in Concepto DSL).
 
-Update (MN / 14.12.2004): 
- - Support for mm 0.7.1 - 0.8.0 constructs (clouds, internal links. opens internal link also if collapsed).
- - Support for icons. Some code adapted from Markus Brueckner's freemind2html.xsl style sheet.
- - newlines &#xa;&#xa; behaviour (find and convert to <br/>)
-	
-Bug fix (FC/ 25.04.2006): 
+ - Support for dsl 0.7.1 - 0.8.0 constructs (clouds, internal links. opens internal link also if collapsed).
+ - Support for icons.
+ - newlines &#xa;&#xa; behaviour (find and convert to <br/>)	
+Bug fix:
  - Export of local hyperlinks corrected.
-
-Update (EWL / 2006-06-02):
+Update:
  - add export of notes & attributes
- - re-format/re-arrange/modularize the file to align with freemind2html.xsl
+ - re-format/re-arrange/modularize the file to align with concepto2html.xsl
 
 Todo:
- - Can CSS fonts be used with Freemind fonts?
+ - Can CSS fonts be used with Concepto DSL fonts?
  - Change licence to MIT -style.
  - integrate JS file to stylesheet
  - parameters: use_icons (true/false)
@@ -49,13 +46,13 @@ Todo:
 	    omit-xml-declaration="no"
 	    />
 
-<!-- fc, 17.10.2004: The following parameter is set by freemind. -->
+<!-- fc, 17.10.2004: The following parameter is set by concepto. -->
 <xsl:param name="destination_dir">./</xsl:param>
 
 <!-- if true, external links urls are shown, default is false. -->
 <xsl:param name="show_link_url">false</xsl:param>
 
-<!-- if false, does not show standard freemind icons
+<!-- if false, does not show standard concepto icons
 (assumed to be in ./icons directory), default is true -->
 <xsl:param name="show_icons">true</xsl:param>
 
@@ -144,7 +141,7 @@ Todo:
 	</xsl:if>
 	<!-- check if this node has an ID (for the document internal links) -->
 	<xsl:if test="@ID">
-	<!-- note: as FreeMind sometimes prepends the IDs with an underscore
+	<!-- note: as Concepto DSL sometimes prepends the IDs with an underscore
 	which is not valid as the first character in an HTML id,
 	we surround the ID with FM<ID>FM -->
 		<xsl:attribute name="id">FM<xsl:value-of select="@ID"/>FM</xsl:attribute>
@@ -174,7 +171,7 @@ Todo:
 		</ul>
 	</xsl:if>
 	<!-- if there are arrowlinks inside this node (i.e. this node is
-	connected to another node in FreeMind using an arrow), then create a
+	connected to another node in Concepto using an arrow), then create a
 	document internal link -->
 	<xsl:if test="child::arrowlink">
 		<xsl:call-template name="output-arrowlinks" />
@@ -184,7 +181,7 @@ Todo:
 
 <!-- ### XHTML LIBRARY ### -->
 <!-- (this part could be extracted and 'import'ed from toxhtml.xsl and
-     freemindtohtml.xsl if there wouldn't be issues with the path -->
+     conceptotohtml.xsl if there wouldn't be issues with the path -->
 
 <xsl:template match="font">
 	<xsl:if test="string-length(@SIZE) > 0">font-size:<xsl:value-of select="round((number(@SIZE) div 12)*100)" />%;</xsl:if><xsl:if test="@BOLD='true'">font-weight:bold;</xsl:if><xsl:if test="@ITALIC='true'">font-style:italic;</xsl:if>

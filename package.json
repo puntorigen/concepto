@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "concepto",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "Punto Origen - ES6 Concepto Class Interface",
   "keywords": [
     "creador",
@@ -28,6 +28,8 @@
     "test_dsl": "npm run dev && node test/pablo.js test/ejecutivos.dsl"
   },
   "dependencies": {
+    "await-spawn": "^4.0.2",
+    "cheerio": "^1.0.0-rc.10",
     "deep-object-diff": "^1.1.0",
     "deepmerge": "^4.2.2",
     "dsl_parser": "github:puntorigen4u/dsl_parser",

@@ -365,26 +365,49 @@ export default class concepto {
 					target_path = path.resolve(this.x_config.export_html);
 				}
 				//create target path if it doesn't exist
-				/*
 				try { 
 					await fs.mkdir(target_path);
-				} catch(cpath_err) {}*/
+				} catch(cpath_err) {}
 				//get our assets path
 				let concepto_loc = path.dirname(require.resolve('concepto/package.json'));
 				let export_ = path.join(concepto_loc,'lib','export');
 				let runtime_ = path.join(export_,'runtime');
 				//copy runtime assets to target_path
-				//let copy = require('recursive-copy');
-				//await copy(runtime_, target_path);
-				this.x_console.out({ message:`testing --export-html`, data:{concepto_loc,export_,runtime_,target_path}, color:'brightYellow'});
-				process.exit(1500);
+				let copy = require('recursive-copy');
+				try {
+					await copy(runtime_, target_path);
+				} catch(ercp) {}
 				//transform to .dsl file to html
-				//search img src nodes within dsl file and copy found images to target_path
+				let spawn = require('await-spawn');
+				let target_html = path.join(target_path,'index.html');
+				let export_xslt = path.join(export_,'toxhtml.xsl');
+				await spawn('xsltproc',['-o',target_html,export_xslt,this.x_flags.dsl],{ cwd:tmp.directory });
+				//search all images/assets used within generated .html
+				let cheerio = require('cheerio');
+				let generated_html = await fs.readFile(target_html,'utf-8');
+				let $ = cheerio.load(generated_html, { ignoreWhitespace: false, xmlMode:true, decodeEntities:false });
+				let images = [];
+				$('img[src]').toArray().map(async function(elem) {
+					let src = $(elem).attr('src');
+					if (src.charAt(0)!='.' && images.includes(src)==false) {
+						let full_ = path.join(tmp.directory,src);
+						let exists_ = await this.exists(full_);
+						if (exists_==true) {
+							images.push(full_);
+							try {
+								await copy(full,target_path);
+							} catch(ercp) {}
+						}
+					}
+				});
+				//copy existing found images to target_path - , data:{images,concepto_loc,export_,runtime_,target_path}
+				this.x_console.outT({ message:`export ready`, color:'brightGreen'});
+				//process.exit(1500);
 				//ready
 			}
 			// continue
 			if (this.x_config.justgit && this.x_config.justgit==true) {
-				this.x_console.out({ message:`Stopping after creating DSL GIT version as requested!`, color:'brightCyan'});
+				this.x_console.out({ message:`Stopping after creating DSL GIT version as requested!`, color:'brightYellow'});
 				process.exit(1);
 			} else {
 				this.x_flags.init_ok = true;
