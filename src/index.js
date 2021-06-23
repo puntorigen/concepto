@@ -382,26 +382,34 @@ export default class concepto {
 				let target_html = path.join(target_path,'index.html');
 				let export_xslt = path.join(export_,'toxhtml.xsl');
 				await spawn('xsltproc',['-o',target_html,export_xslt,this.x_flags.dsl],{ cwd:tmp.directory });
+				let sleep=function(ms) {
+					return new Promise(resolve => setTimeout(resolve, ms));
+				}
+				await sleep(50);
 				//search all images/assets used within generated .html
 				let cheerio = require('cheerio');
 				let generated_html = await fs.readFile(target_html,'utf-8');
 				let $ = cheerio.load(generated_html, { ignoreWhitespace: false, xmlMode:true, decodeEntities:false });
 				let images = [];
-				$('img[src]').toArray().map(async function(elem) {
+				let me = this;
+				$('img[src]').toArray().map(function(elem) {
 					let src = $(elem).attr('src');
 					if (src.charAt(0)!='.' && images.includes(src)==false) {
 						let full_ = path.join(tmp.directory,src);
-						let exists_ = await this.exists(full_);
-						if (exists_==true) {
-							images.push(full_);
-							try {
-								await copy(full,target_path);
-							} catch(ercp) {}
-						}
+						images.push(full_);
 					}
 				});
+				//copy existing found images to target_path
+				for (let x of images) {
+					let y = x.replace(tmp.directory,'');
+					let target = path.join(target_path,y);
+					try {
+						//console.log(`copying ${x} to ${target}`);
+						await copy(x,target);
+					} catch(ercp) {}
+				}
 				//copy existing found images to target_path - , data:{images,concepto_loc,export_,runtime_,target_path}
-				this.x_console.outT({ message:`export ready`, color:'brightGreen'});
+				this.x_console.outT({ message:`export ready`, color:'brightGreen' });
 				//process.exit(1500);
 				//ready
 			}
