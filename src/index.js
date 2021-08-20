@@ -103,9 +103,9 @@ export default class concepto {
 				color: 'cyan',
 				config: { align:'left' }
 			});
-			this.dsl_parser = new dsl_parser({ file:this.x_flags.dsl, config:{ cancelled:false, debug:this.x_config.debug } });
+			this.dsl_parserF = new dsl_parser({ file:this.x_flags.dsl, config:{ cancelled:true, debug:this.x_config.debug } });
 			try {
-				await this.dsl_parser.process();
+				await this.dsl_parserF.process();
 			} catch(d_err) {
 				this.x_console.out({ message:`error: file ${this.x_flags.dsl} does't exist!`,data:d_err });
 				return;
@@ -114,7 +114,7 @@ export default class concepto {
 			this.x_console.outT({ message:`time passed since start .. ${this.secsPassed_()}`, color:'cyan' });
 			// @TODO create github compatible DSL
 			if (this.x_config.dsl_git) {
-				let for_git = await this.dsl_parser.createGitVersion(false, function($) {
+				let for_git = await this.dsl_parserF.createGitVersion(false, function($) {
 					//search aws node (even if it doesn't have the secret icon)
 					let aws = $(`node[TEXT=aws] attribute[NAME*=access]`).toArray();
 					aws.map(function(elem) {
@@ -171,6 +171,12 @@ export default class concepto {
 				}
 				//
 				
+			}
+			//reparse dsl without cancelled nodes
+			this.dsl_parser = new dsl_parser({ file:this.x_flags.dsl, config:{ cancelled:false, debug:false } });
+			try {
+				await this.dsl_parser.process();
+			} catch(d_err2) {
 			}
 			//config persistant cache
 			this.x_console.outT({ message:`configuring cache ..`, color:'cyan' });
