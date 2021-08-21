@@ -209,7 +209,7 @@ export default class concepto {
 				//@todo clean CREATED and MODIFIED dates and FOLDED attributos from from_content and non_git_content, before getting differences
 				let files = {};
 				if (show_debug) this.debug(`diff_from: cleaning: pre-processing diff_from`);
-				files.from_parser = new dsl_parser({ file:from_dsl, config:{ cancelled:false, debug:false } });
+				files.from_parser = new dsl_parser({ file:from_dsl, config:{ cancelled:true, debug:false } });
 				try {
 					await files.from_parser.process();
 				} catch(d_err) {
@@ -231,7 +231,7 @@ export default class concepto {
 				});
 				files.from_compare = files.from_parser.$.html();
 				if (show_debug) this.debug(`diff_from: cleaning: pre-processing non_git`);
-				files.ng_parser = new dsl_parser({ file:non_git, config:{ cancelled:false, debug:false } });
+				files.ng_parser = new dsl_parser({ file:non_git, config:{ cancelled:true, debug:false } });
 				try {
 					await files.ng_parser.process();
 				} catch(d_err) {
@@ -260,13 +260,13 @@ export default class concepto {
 				//if (show_debug) this.debug(`diff_from: raw differences`,compare);
 				// reparse.... @todo improve!!!! ... this is just a hack to maintain original format and dates without taking those into account for the diff
 				if (show_debug) this.debug(`diff_from: reparsing from_dsl and non_git files`);
-				files.from_parser = new dsl_parser({ file:from_dsl, config:{ cancelled:false, debug:false } });
+				files.from_parser = new dsl_parser({ file:from_dsl, config:{ cancelled:true, debug:false } });
 				try {
 					await files.from_parser.process();
 				} catch(d_err) {
 				}
 				files.from_compare = files.from_parser.$.html();
-				files.ng_parser = new dsl_parser({ file:non_git, config:{ cancelled:false, debug:false } });
+				files.ng_parser = new dsl_parser({ file:non_git, config:{ cancelled:true, debug:false } });
 				try {
 					await files.ng_parser.process();
 				} catch(d_err) {
