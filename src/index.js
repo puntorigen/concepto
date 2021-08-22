@@ -191,210 +191,214 @@ export default class concepto {
 				await this.cache.clear();
 			}
 			//diff_from arg (creates {class}_diff.dsl)
-			if (this.x_config.diff_from) {
-				let show_debug = this.x_config.debug;
-				this.x_console.outT({ message: `(as requested) creating ${this.x_config.class}_diff.dsl map from ${this.x_config.diff_from}`, color:'brightCyan' });
-				let fs = require('fs').promises, path = require('path');
-				//read non _git .dsl file source
-				let non_git = path.join(tmp.directory,path.basename(this.x_flags.dsl).replace('_git.dsl','.dsl'));
-				if (show_debug) this.debug(`diff_from: reading 'non git' file ${non_git}`);
-				let non_git_content = await fs.readFile(non_git,'utf-8');
-				//read given diff_from file
-				let from_dsl = path.resolve(this.x_config.diff_from);
-				if (show_debug) this.debug(`diff_from: reading 'diff_from' file ${from_dsl}`);
-				let from_content = await fs.readFile(from_dsl,'utf-8');
-				//create _diff.dsl file
-				let diff_dsl = path.join(tmp.directory,path.basename(this.x_flags.dsl).replace('_git.dsl','.dsl').replace('.dsl','_diff.dsl'));
-				if (show_debug) this.debug(`diff_from: future target ${diff_dsl}`);
-				//@todo clean CREATED and MODIFIED dates and FOLDED attributos from from_content and non_git_content, before getting differences
-				let files = {};
-				if (show_debug) this.debug(`diff_from: cleaning: pre-processing diff_from`);
-				files.from_parser = new dsl_parser({ file:from_dsl, config:{ cancelled:true, debug:false } });
-				try {
-					await files.from_parser.process();
-				} catch(d_err) {
-				}
-				if (show_debug) this.debug(`diff_from: cleaning: removing properties for diff`);
-				files.from_parser.$(`node`).each(function(i,elem) {
-					let me = files.from_parser;
-					me.$(elem).attr("CREATED", "1552681669876");
-					me.$(elem).attr("MODIFIED", "1552681669876");
-					me.$(elem).removeAttr("VSHIFT");
-					me.$(elem).removeAttr("HGAP");
-					me.$(elem).removeAttr("FOLDED");
-					me.$(elem).removeAttr("STYLE");
-				});
-				//remove attribute_layout tags from comparision
-				if (show_debug) this.debug(`diff_from: cleaning: removing attribute_layout for diff`);
-				files.from_parser.$(`attribute_layout`).each(function(i,elem) {
-					files.from_parser.$(elem).replaceWith('');
-				});
-				files.from_compare = files.from_parser.$.html();
-				if (show_debug) this.debug(`diff_from: cleaning: pre-processing non_git`);
-				files.ng_parser = new dsl_parser({ file:non_git, config:{ cancelled:true, debug:false } });
-				try {
-					await files.ng_parser.process();
-				} catch(d_err) {
-				}
-				files.ng_compare_bak = files.ng_parser.$.html();
-				if (show_debug) this.debug(`diff_from: cleaning: removing properties for diff`);
-				files.ng_parser.$(`node`).each(function(i,elem) {
-					let me = files.ng_parser;
-					me.$(elem).attr("CREATED", "1552681669876");
-					me.$(elem).attr("MODIFIED", "1552681669876");
-					me.$(elem).removeAttr("VSHIFT");
-					me.$(elem).removeAttr("HGAP");
-					me.$(elem).removeAttr("FOLDED");
-					me.$(elem).removeAttr("STYLE");
-				});
-				//remove attribute_layout tags from comparision
-				if (show_debug) this.debug(`diff_from: cleaning: removing attribute_layout for diff`);
-				files.ng_parser.$(`attribute_layout`).each(function(i,elem) {
-					files.ng_parser.$(elem).replaceWith('');
-				});
-				files.ng_compare = files.ng_parser.$.html();
-				//get differences
-				//let compare = await this.dsl_parser.getDifferences(from_content,non_git_content);
-				if (show_debug) this.debug(`diff_from: detecting remaining differences`);
-				let compare = await this.dsl_parser.getDifferences(files.from_compare,files.ng_compare);
-				//if (show_debug) this.debug(`diff_from: raw differences`,compare);
-				// reparse.... @todo improve!!!! ... this is just a hack to maintain original format and dates without taking those into account for the diff
-				if (show_debug) this.debug(`diff_from: reparsing from_dsl and non_git files`);
-				files.from_parser = new dsl_parser({ file:from_dsl, config:{ cancelled:true, debug:false } });
-				try {
-					await files.from_parser.process();
-				} catch(d_err) {
-				}
-				files.from_compare = files.from_parser.$.html();
-				files.ng_parser = new dsl_parser({ file:non_git, config:{ cancelled:true, debug:false } });
-				try {
-					await files.ng_parser.process();
-				} catch(d_err) {
-				}
-				files.ng_compare = files.ng_parser.$.html();
-				//
-				let diff = { content:'' };
-				//parse diff content
-				diff.parser = files.ng_parser;
-				diff.content = files.ng_compare; //diff.parser.$.html();
-				//remove all previous clouds from diff.content
-				if (show_debug) this.debug(`diff_from: cleaning: removing existing cloud tags`);
-				let clouds = diff.parser.$(`cloud`);
-				clouds.each(function(i,elem) {
-					let cur = diff.parser.$(elem);
-					cur.replaceWith('');
-				});
-				//for each added IDs, search and add a Green CLOUD (#d9f7be, green-2)
-				if (show_debug) this.debug(`diff_from: adding green clouds to ${Object.keys(compare.added).length} new nodes`);
-				for (let key in compare.added) {
-					diff.content = await diff.parser.editNode({ node_id:key, children:true, 
-						data:function(x) {
-							return {
-								text_note_html: { p:['ADDED NODE',x.text_note] },
-								cloud: {
-									used:true,
-									bgcolor:'#d9f7be'
-								}
-							}
-						} 
-					});
-					// get first dad node of 'key' to highlight it as containing a diff
-					/*let dads = await diff.parser.getParentNodesIDs({ id:key, array:true });
-					let first_node = dads.pop();
-					diff.content = await diff.parser.editNode({ node_id:first_node, 
-						data:{
-								text_note: `!! THIS NODE CONTAINS A *NEW* NODE INSIDE !!`,
-								cloud: {
-									used:true,
-									bgcolor:'#f6ffed' //green-1
-								}
-							}
-					});*/
-				}
-				//for each modified IDs, search and add a Yellow CLOUD (gold-2)
-				let from = {};
-				from.parser = files.from_parser;
-				/*if (show_debug) this.debug(`diff_from: grouping ${Object.keys(compare.modified).length} modified nodes`);				
-				for (let key in compare.modified) {
-					let parents = await from.parser.getParentNodesIDs({ id:key, array:true });
-					let modified = Object.keys(compare.modified);
-					let intersect = this.array_intersect(parents,modified);
-					if (intersect.length>0) {
-						//there is a dad of ourself within compare.modified; erase ourselfs
-						delete compare.modified[key];
+			try {
+				if (this.x_config.diff_from) {
+					let show_debug = this.x_config.debug;
+					this.x_console.outT({ message: `(as requested) creating ${this.x_config.class}_diff.dsl map from ${this.x_config.diff_from}`, color:'brightCyan' });
+					let fs = require('fs').promises, path = require('path');
+					//read non _git .dsl file source
+					let non_git = path.join(tmp.directory,path.basename(this.x_flags.dsl).replace('_git.dsl','.dsl'));
+					if (show_debug) this.debug(`diff_from: reading 'non git' file ${non_git}`);
+					let non_git_content = await fs.readFile(non_git,'utf-8');
+					//read given diff_from file
+					let from_dsl = path.resolve(this.x_config.diff_from);
+					if (show_debug) this.debug(`diff_from: reading 'diff_from' file ${from_dsl}`);
+					let from_content = await fs.readFile(from_dsl,'utf-8');
+					//create _diff.dsl file
+					let diff_dsl = path.join(tmp.directory,path.basename(this.x_flags.dsl).replace('_git.dsl','.dsl').replace('.dsl','_diff.dsl'));
+					if (show_debug) this.debug(`diff_from: future target ${diff_dsl}`);
+					//@todo clean CREATED and MODIFIED dates and FOLDED attributos from from_content and non_git_content, before getting differences
+					let files = {};
+					if (show_debug) this.debug(`diff_from: cleaning: pre-processing diff_from`);
+					files.from_parser = new dsl_parser({ file:from_dsl, config:{ cancelled:true, debug:false } });
+					try {
+						await files.from_parser.process();
+					} catch(d_err) {
 					}
-				};*/
-				if (show_debug) this.debug(`diff_from: adding yellow clouds to ${Object.keys(compare.modified).length} modified nodes`);
-				for (let key in compare.modified) {
-					diff.content = await diff.parser.editNode({ node_id:key, children:true,
-						data:function(x) {
-							return {
-								text_note_html: { p:['MODIFIED NODE',...compare.modified[key],x.text_note] },
-								cloud: {
-									used: true,
-									bgcolor: '#fff1b8'
-								}
-							}
-						} 
+					if (show_debug) this.debug(`diff_from: cleaning: removing properties for diff`);
+					files.from_parser.$(`node`).each(function(i,elem) {
+						let me = files.from_parser;
+						me.$(elem).attr("CREATED", "1552681669876");
+						me.$(elem).attr("MODIFIED", "1552681669876");
+						me.$(elem).removeAttr("VSHIFT");
+						me.$(elem).removeAttr("HGAP");
+						me.$(elem).removeAttr("FOLDED");
+						me.$(elem).removeAttr("STYLE");
 					});
-					// get first dad node of 'key' to highlight it as containing a diff
-					/*
-					let dads = await diff.parser.getParentNodesIDs({ id:key, array:true });
-					let first_node = dads.pop();
-					diff.content = await diff.parser.editNode({ node_id:first_node, 
-						data:{
-								text_note: `!! THIS NODE CONTAINS A *MODIFIED* NODE INSIDE !!`,
-								cloud: {
-									used:true,
-									bgcolor:'#fffbe6' //gold-1
-								}
-							}
-					});*/
-				}
-				//for each deleted IDs, get deleted nodes from the source and add it to diff with a red CLOUD
-				//21jun21: get parents of each deleted id, if any parent is within the deleted keys, remove the tested id
-				if (show_debug) this.debug(`diff_from: grouping ${Object.keys(compare.deleted).length} deleted nodes`);
-				for (let key in compare.deleted) {
-					let parents = await from.parser.getParentNodesIDs({ id:key, array:true });
-					let deleted = Object.keys(compare.deleted);
-					let intersect = this.array_intersect(parents,deleted);
-					if (intersect.length>0) {
-						//there is a dad of ourself within compare.deleted; erase ourselfs
-						delete compare.deleted[key];
+					//remove attribute_layout tags from comparision
+					if (show_debug) this.debug(`diff_from: cleaning: removing attribute_layout for diff`);
+					files.from_parser.$(`attribute_layout`).each(function(i,elem) {
+						files.from_parser.$(elem).replaceWith('');
+					});
+					files.from_compare = files.from_parser.$.html();
+					if (show_debug) this.debug(`diff_from: cleaning: pre-processing non_git`);
+					files.ng_parser = new dsl_parser({ file:non_git, config:{ cancelled:true, debug:false } });
+					try {
+						await files.ng_parser.process();
+					} catch(d_err) {
 					}
-				};
-				//
-				if (show_debug) this.debug(`diff_from: recovering ${Object.keys(compare.deleted).length} deleted nodes and adding them as red cloud nodes`);
-				if (Object.keys(compare.deleted).length>0) {
-					// get deleted node from 'from_dsl' source file
-					//process
+					files.ng_compare_bak = files.ng_parser.$.html();
+					if (show_debug) this.debug(`diff_from: cleaning: removing properties for diff`);
+					files.ng_parser.$(`node`).each(function(i,elem) {
+						let me = files.ng_parser;
+						me.$(elem).attr("CREATED", "1552681669876");
+						me.$(elem).attr("MODIFIED", "1552681669876");
+						me.$(elem).removeAttr("VSHIFT");
+						me.$(elem).removeAttr("HGAP");
+						me.$(elem).removeAttr("FOLDED");
+						me.$(elem).removeAttr("STYLE");
+					});
+					//remove attribute_layout tags from comparision
+					if (show_debug) this.debug(`diff_from: cleaning: removing attribute_layout for diff`);
+					files.ng_parser.$(`attribute_layout`).each(function(i,elem) {
+						files.ng_parser.$(elem).replaceWith('');
+					});
+					files.ng_compare = files.ng_parser.$.html();
+					//get differences
+					//let compare = await this.dsl_parser.getDifferences(from_content,non_git_content);
+					if (show_debug) this.debug(`diff_from: detecting remaining differences`);
+					let compare = await this.dsl_parser.getDifferences(files.from_compare,files.ng_compare);
+					//if (show_debug) this.debug(`diff_from: raw differences`,compare);
+					// reparse.... @todo improve!!!! ... this is just a hack to maintain original format and dates without taking those into account for the diff
+					if (show_debug) this.debug(`diff_from: reparsing from_dsl and non_git files`);
+					files.from_parser = new dsl_parser({ file:from_dsl, config:{ cancelled:true, debug:false } });
+					try {
+						await files.from_parser.process();
+					} catch(d_err) {
+					}
+					files.from_compare = files.from_parser.$.html();
+					files.ng_parser = new dsl_parser({ file:non_git, config:{ cancelled:true, debug:false } });
+					try {
+						await files.ng_parser.process();
+					} catch(d_err) {
+					}
+					files.ng_compare = files.ng_parser.$.html();
+					//
+					let diff = { content:'' };
+					//parse diff content
+					diff.parser = files.ng_parser;
+					diff.content = files.ng_compare; //diff.parser.$.html();
+					//remove all previous clouds from diff.content
+					if (show_debug) this.debug(`diff_from: cleaning: removing existing cloud tags`);
+					let clouds = diff.parser.$(`cloud`);
+					clouds.each(function(i,elem) {
+						let cur = diff.parser.$(elem);
+						cur.replaceWith('');
+					});
+					//for each added IDs, search and add a Green CLOUD (#d9f7be, green-2)
+					if (show_debug) this.debug(`diff_from: adding green clouds to ${Object.keys(compare.added).length} new nodes`);
+					for (let key in compare.added) {
+						diff.content = await diff.parser.editNode({ node_id:key, children:true, 
+							data:function(x) {
+								return {
+									text_note_html: { p:['ADDED NODE',x.text_note] },
+									cloud: {
+										used:true,
+										bgcolor:'#d9f7be'
+									}
+								}
+							} 
+						});
+						// get first dad node of 'key' to highlight it as containing a diff
+						/*let dads = await diff.parser.getParentNodesIDs({ id:key, array:true });
+						let first_node = dads.pop();
+						diff.content = await diff.parser.editNode({ node_id:first_node, 
+							data:{
+									text_note: `!! THIS NODE CONTAINS A *NEW* NODE INSIDE !!`,
+									cloud: {
+										used:true,
+										bgcolor:'#f6ffed' //green-1
+									}
+								}
+						});*/
+					}
+					//for each modified IDs, search and add a Yellow CLOUD (gold-2)
+					let from = {};
+					from.parser = files.from_parser;
+					/*if (show_debug) this.debug(`diff_from: grouping ${Object.keys(compare.modified).length} modified nodes`);				
+					for (let key in compare.modified) {
+						let parents = await from.parser.getParentNodesIDs({ id:key, array:true });
+						let modified = Object.keys(compare.modified);
+						let intersect = this.array_intersect(parents,modified);
+						if (intersect.length>0) {
+							//there is a dad of ourself within compare.modified; erase ourselfs
+							delete compare.modified[key];
+						}
+					};*/
+					if (show_debug) this.debug(`diff_from: adding yellow clouds to ${Object.keys(compare.modified).length} modified nodes`);
+					for (let key in compare.modified) {
+						diff.content = await diff.parser.editNode({ node_id:key, children:true,
+							data:function(x) {
+								return {
+									text_note_html: { p:['MODIFIED NODE',...compare.modified[key],x.text_note] },
+									cloud: {
+										used: true,
+										bgcolor: '#fff1b8'
+									}
+								}
+							} 
+						});
+						// get first dad node of 'key' to highlight it as containing a diff
+						/*
+						let dads = await diff.parser.getParentNodesIDs({ id:key, array:true });
+						let first_node = dads.pop();
+						diff.content = await diff.parser.editNode({ node_id:first_node, 
+							data:{
+									text_note: `!! THIS NODE CONTAINS A *MODIFIED* NODE INSIDE !!`,
+									cloud: {
+										used:true,
+										bgcolor:'#fffbe6' //gold-1
+									}
+								}
+						});*/
+					}
+					//for each deleted IDs, get deleted nodes from the source and add it to diff with a red CLOUD
+					//21jun21: get parents of each deleted id, if any parent is within the deleted keys, remove the tested id
+					if (show_debug) this.debug(`diff_from: grouping ${Object.keys(compare.deleted).length} deleted nodes`);
 					for (let key in compare.deleted) {
-						let deleted_node = await from.parser.getNode({ id:key, recurse:true });
-						deleted_node.icons = [...deleted_node.icons,'button_cancel'];
-						deleted_node.cloud = {
-							used: true,
-							bgcolor: '#ffa39e',
-						};
-						deleted_node.text_note_html = { p:['!! DELETED NODE !!','',deleted_node.text_note] };
-						// get parent node of deleted_node (to add it to that location within diff)
-						let dad = await from.parser.getParentNode({ id:key });
-						// add deleted_node as a child of dad within diff
-						diff.content = await diff.parser.addNode({ parent_id:dad.id, node:deleted_node });
+						let parents = await from.parser.getParentNodesIDs({ id:key, array:true });
+						let deleted = Object.keys(compare.deleted);
+						let intersect = this.array_intersect(parents,deleted);
+						if (intersect.length>0) {
+							//there is a dad of ourself within compare.deleted; erase ourselfs
+							delete compare.deleted[key];
+						}
+					};
+					//
+					if (show_debug) this.debug(`diff_from: recovering ${Object.keys(compare.deleted).length} deleted nodes and adding them as red cloud nodes`);
+					if (Object.keys(compare.deleted).length>0) {
+						// get deleted node from 'from_dsl' source file
+						//process
+						for (let key in compare.deleted) {
+							let deleted_node = await from.parser.getNode({ id:key, recurse:true });
+							deleted_node.icons = [...deleted_node.icons,'button_cancel'];
+							deleted_node.cloud = {
+								used: true,
+								bgcolor: '#ffa39e',
+							};
+							deleted_node.text_note_html = { p:['!! DELETED NODE !!','',deleted_node.text_note] };
+							// get parent node of deleted_node (to add it to that location within diff)
+							let dad = await from.parser.getParentNode({ id:key });
+							// add deleted_node as a child of dad within diff
+							diff.content = await diff.parser.addNode({ parent_id:dad.id, node:deleted_node });
+						}
 					}
+					//console.log('new diff content',diff.content);
+					//console.log('compare results',compare);
+					//save new eb_diff.dsl content from differences
+					if (show_debug) this.debug(`diff_from: writing _diff.dsl file`);
+					try {
+						await fs.writeFile(diff_dsl,diff.content,'utf-8', { flag:'w' }); //overwrite by default
+					} catch(errwr) {
+						//delete existing file and write again
+						if (show_debug) this.debug(`diff_from: error writing _diff.dsl file`,errwr);
+					}
+					this.x_console.outT({ message: `(as requested) file ${this.x_config.class}_diff.dsl created`, color:'brightCyan' });
+					//console.log('compare',compare);
+					//process.exit(1000);
 				}
-				//console.log('new diff content',diff.content);
-				//console.log('compare results',compare);
-				//save new eb_diff.dsl content from differences
-				if (show_debug) this.debug(`diff_from: writing _diff.dsl file`);
-				try {
-					await fs.writeFile(diff_dsl,diff.content,'utf-8', { flag:'w' }); //overwrite by default
-				} catch(errwr) {
-					//delete existing file and write again
-					if (show_debug) this.debug(`diff_from: error writing _diff.dsl file`,errwr);
-				}
-				this.x_console.outT({ message: `(as requested) file ${this.x_config.class}_diff.dsl created`, color:'brightCyan' });
-				//console.log('compare',compare);
-				//process.exit(1000);
+			} catch(errdiff) {
+				this.x_console.outT({ message: `warning: there was an error creating _diff.dsl differences files`, color:'brightRed' });
 			}
 			//export_html arg (creates an html representation of given dsl file)
 			if (this.x_config.export_html) {
