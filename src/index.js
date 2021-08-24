@@ -173,6 +173,8 @@ export default class concepto {
 				
 			}
 			//reparse dsl without cancelled nodes
+			let remove_cancelled = this.dsl_parser.getParser();
+			remove_cancelled('icon[BUILTIN*=button_cancel]').parent().remove();
 			/*this.dsl_parser = new dsl_parser({ file:this.x_flags.dsl, config:{ cancelled:false, debug:false } });
 			try {
 				await this.dsl_parser.process();
@@ -398,7 +400,7 @@ export default class concepto {
 					//process.exit(1000);
 				}
 			} catch(errdiff) {
-				this.x_console.outT({ message: `warning: there was an error creating _diff.dsl differences files`, color:'brightRed' });
+				this.x_console.outT({ message: `warning: there was an error creating _diff.dsl differences files`, color:'brightRed', data:errdiff });
 			}
 			//export_html arg (creates an html representation of given dsl file)
 			if (this.x_config.export_html) {
