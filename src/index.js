@@ -1373,11 +1373,11 @@ export default class concepto {
 		if (typeof raw_tmp == 'string' && raw_tmp.includes('commands.js')) {
 			let extract = require('extractjs')();
 			let elements = extract(`at {path}commands.js:{line}:{col}\n`,raw_tmp);
-			if (elements.path.includes(' (')) {
+			if (elements.path && elements.path.includes(' (')) {
 				elements = extract(` ({path}commands.js:{line}:{col}\n`,raw_tmp);
 			}
 			//console.log('Pablo debug - showLine elements',elements);
-			error_info.file = elements.path+'commands.js';
+			error_info.file = (elements.path)?elements.path:''+'commands.js';
 			error_info.line = elements.line;
 			error_info.col = elements.col;
 		}
