@@ -1377,9 +1377,10 @@ export default class concepto {
 				elements = extract(` ({path}commands.js:{line}:{col}\n`,raw_tmp);
 			}
 			//console.log('Pablo debug - showLine elements',elements);
-			error_info.file = (elements.path)?elements.path:''+'commands.js';
+			error_info.file = (elements.path)?elements.path:'';
+			error_info.file += 'commands.js';
 			error_info.line = elements.line;
-			error_info.col = elements.col;
+			error_info.col = elements.col.replace(')','');
 		}
 		if (error_info.file && (await this.exists(error_info.file))==true) {
 			let fs = require('fs').promises;
