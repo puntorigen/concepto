@@ -1380,7 +1380,11 @@ export default class concepto {
 			error_info.file = (elements.path)?elements.path:'';
 			error_info.file += 'commands.js';
 			error_info.line = elements.line;
-			error_info.col = elements.col.replace(')','');
+			try {
+				error_info.col = elements.col.replace(')','');
+			} catch(xttt) {
+				//console.log('error with col',{raw_tmp,error_info});
+			}
 		}
 		if (error_info.file && (await this.exists(error_info.file))==true) {
 			let fs = require('fs').promises;
