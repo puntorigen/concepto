@@ -947,6 +947,7 @@ export default class concepto {
 				if (command_requires['x_level']!='' && allTrue(matched,keys)) {
 					this.debug_time({ id:`${key} x_level` });
 					matched.x_level=numberInCondition(node.level,command_requires['x_level']);	
+					//console.log('x_level DEBUG:',{matched, node, command_requires});
 					this.debug_timeEnd({ id:`${key} x_level` });
 				}
 				// test 9: x_or_hasparent
@@ -1009,9 +1010,11 @@ export default class concepto {
 						break;
 					}
 				}
-				/*if (node.id=='ID_923953027') {
-				console.log(`${node.text}: ${key} command_requires`,command_requires);
-				console.log(`${node.text}: matched`,matched);
+				/*
+				if (node.id=='ID_160079449') {
+					console.log(`${node.text}: ${key} command_requires`,command_requires);
+					console.log(`${node.text}: matched`,matched);
+					console.log(`${node.text}: node/keys`,{node,keys});
 				}*/
 				await setImmediatePromise();
 			}
@@ -1973,9 +1976,12 @@ function numberInCondition(num,command_test) {
 		} else {
 			// cases test:['2','>2','2,3,5']
 			let test2 = command_test.split(',');
-			if (command_test.indexOf('<')==-1 && command_test.indexOf('>')==-1 && test2.includes(num)) {
+			if (command_test.indexOf('<')==-1 && command_test.indexOf('>')==-1 && test2.includes(num.toString())) {
 				// exact match;
 				resp=true;
+			} else if (command_test.indexOf('<')==-1 && command_test.indexOf('>')==-1 && test2.includes(num.toString())==false) {
+				resp=false;
+
 			} else if (command_test.indexOf('<')!=-1 || command_test.indexOf('>')!=-1) {
 				// test may be >2,<5,>7
 				// 'and/all' (>2,<7)
