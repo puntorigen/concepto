@@ -1321,8 +1321,13 @@ export default class concepto {
 	// improved in my imagination ...
 	async sub_process(source_resp,nodei,custom_state) {
 		let resp = {...source_resp};
-		if (resp.hasChildren==true && resp.valid==true) {
-			let sub_nodes = await nodei.getNodes();
+		if (resp.hasChildren==true && resp.valid==true && nodei.getNodes) {
+			let sub_nodes;
+			try {
+				sub_nodes = await nodei.getNodes();
+			} catch(errrr) {
+				console.log('node que falla con getNodes()',nodei);
+			}
 			let new_state = {}, xx=0;
 			if (nodei.state) new_state = {...nodei.state};
 			new_state = {...new_state,...custom_state};
