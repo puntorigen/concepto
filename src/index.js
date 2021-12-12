@@ -50,7 +50,7 @@ export default class concepto {
 
 	constructor(file,config={}) {
 		if (arguments.length!=2 || typeof arguments[0] === 'object') throw new Error('fatal error! missing file parameter for parser!');
-		let console_ = require('open_console'); 
+		let console_ = require('@concepto/console'); 
 		let me=this;
 		let def_config = {
 			class:'concepto',
