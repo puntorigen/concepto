@@ -1,15 +1,17 @@
 {
-  "private": true,
-  "name": "concepto",
+  "name": "@concepto/interface",
   "version": "2.1.93",
-  "description": "Punto Origen - ES6 Concepto Class Interface",
+  "description": "Concepto DSL - visually create and maintain modern node.js based apps (@interface)",
   "keywords": [
     "creador",
     "puntorigen",
     "concepto",
-    "dsl"
+    "conceptodsl",
+    "dsl",
+    "language",
+    "interface"
   ],
-  "license": "AGPL-3.0-or-later",
+  "license": "MIT",
   "author": "Pablo Schaffner",
   "homepage": "http://github.com/puntorigen4u/concepto.git",
   "repository": {
@@ -24,8 +26,7 @@
   "scripts": {
     "dev": "cross-env NODE_ENV=development rollup -c",
     "build": "cross-env NODE_ENV=production rollup -c && npm run docs",
-    "docs": "jsdoc2md -t README.hbs src/*.js > README.md",
-    "test_dsl": "npm run dev && node test/pablo.js test/ejecutivos.dsl"
+    "docs": "jsdoc2md -t README.hbs src/*.js > README.md"
   },
   "dependencies": {
     "await-spawn": "^4.0.2",

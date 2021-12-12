@@ -1052,6 +1052,18 @@ export default class concepto {
 	}
 
 	/**
+	* Signals an abort event for the processing methods.
+	*
+	* @async
+	* @return 	{Command|boolean}
+	*/
+
+	async abortProcessing() {
+		this.abort=true;
+		return true;
+	};
+	
+	/**
 	* Finds the valid/best command match for the given node.
 	* Also tests the command for its 'valid' attribute, in case the command func specified aditional conditions.
 	* If no command is found, returns false.
@@ -1152,7 +1164,9 @@ export default class concepto {
 		this.debug_time({ id:'process/writer' }); let tmp = {}, resp = { nodes:[] };
 		// read nodes
 		this.x_console.outT({ prefix:'process,yellow', message:`processing nodes ..`, color:'cyan' });
-		let x_dsl_nodes = await this.dsl_parser.getNodes({ level:2, nodes_raw:true, hash_content:true });	
+		let x_dsl_nodes = await this.dsl_parser.getNodes({ level:2, nodes_raw:true, hash_content:true });
+		// add abort support
+		this.abort = false;
 		this.debug('calling onPrepare');
 		this.debug_time({ id:'onPrepare' });
 		await this.onPrepare();
@@ -1214,6 +1228,7 @@ export default class concepto {
 		let obj_diff = require('deep-object-diff').diff;
 		let deep = require('deepmerge');
 		for (let level2 of x_dsl_nodes) {
+			if (this.abort) break; //abort processing if request
 			//this.debug('node',level2);
 			//break;
 			if (!this.x_config.debug && !this.x_config.silent) { 

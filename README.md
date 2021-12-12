@@ -1,4 +1,17 @@
-# Punto Origen OPEN Framework : ES6 Classes
+<p align="center">
+  <a href="http://www.puntorigen.com/" target="blank"><img src="https://user-images.githubusercontent.com/57605485/144762579-7114f229-a01a-4afd-9a18-62ec3dbf3478.png" width="320" alt="Concepto DSL Logo" /></a>
+</p>
+<p align="center">A progressive <a href="http://nodejs.org" target="blank">Node.js</a> framework for visually building efficient and scalable nodejs based applications.</p>
+<p align="center">
+    <a href="https://www.npmjs.com/~concepto"><img src="https://img.shields.io/npm/v/@concepto/vue.svg" alt="NPM Version" /></a>
+    <a href="https://www.npmjs.com/~concepto"><img src="https://img.shields.io/npm/l/@concepto/vue.svg" alt="Package License" /></a>
+    <a href="https://www.npmjs.com/~concepto"><img src="https://img.shields.io/npm/dm/@concepto/vue.svg" alt="NPM Downloads" /></a>
+    <a href="https://www.npmjs.com/~concepto" target="_blank"><img src="https://img.shields.io/tokei/lines/github/puntorigen4u/vue_dsl"></a>
+    <a href="https://twitter.com/punt0rigen" target="_blank"><img src="https://img.shields.io/twitter/follow/punt0rigen.svg?style=social&label=Follow"></a>
+</p>
+
+## Description
+Language Class Interface for creating DSL parsers for <a href="https://www.npmjs.com/package/@concepto/cli">Concepto DSL</a>
 
 # API Reference
 Concepto DSL Base Class: A base class (to be extended) for defining new languages for Concepto to be compiled to.
@@ -21,6 +34,7 @@ Concepto DSL Base Class: A base class (to be extended) for defining new language
         * [.addCommands(command_func)](#module_concepto+addCommands)
         * [.cacheCommands()](#module_concepto+cacheCommands)
         * [.findCommand(node, [justone])](#module_concepto+findCommand) ⇒ <code>Command</code> \| <code>Array.&lt;Command&gt;</code>
+        * [.abortProcessing()](#module_concepto+abortProcessing) ⇒ <code>Command</code> \| <code>boolean</code>
         * [.findValidCommand(node, [object])](#module_concepto+findValidCommand) ⇒ <code>Command</code> \| <code>boolean</code>
         * [.process()](#module_concepto+process) ⇒ <code>Object</code>
         * [.array_intersect(arr1, arr2)](#module_concepto+array_intersect) ⇒ <code>Array.&lt;string&gt;</code> \| <code>Array.&lt;Object&gt;</code> \| <code>Array.&lt;boolean&gt;</code>
@@ -189,6 +203,12 @@ Finds one or more commands defined that matches the specs of the given node.
 | node | <code>NodeDSL</code> |  | node for which to find commands that match |
 | [justone] | <code>boolean</code> | <code>true</code> | indicates if you want just the first match (true), or all commands that match the given node (false) |
 
+<a name="module_concepto+abortProcessing"></a>
+
+### concepto.abortProcessing() ⇒ <code>Command</code> \| <code>boolean</code>
+Signals an abort event for the processing methods.
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
 <a name="module_concepto+findValidCommand"></a>
 
 ### concepto.findValidCommand(node, [object]) ⇒ <code>Command</code> \| <code>boolean</code>
