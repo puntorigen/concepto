@@ -95,7 +95,7 @@ export default class concepto {
 	*/
 	async init() {
 		if (!this.x_flags.init_ok) {
-			let dsl_parser = require('dsl_parser');
+			let dsl_parser = require('@concepto/dsl_parser');
 			let path = require('path'), fs = require('fs').promises, tmp = {};
 			// show title
 			this.x_console.title({ 
