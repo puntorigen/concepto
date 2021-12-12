@@ -1,17 +1,17 @@
 import concepto from 'concepto'
 
 /**
-* Concepto VUE DSL Class: A class for compiling vue.dsl Concepto diagrams into VueJS WebApps.
-* @name 	vue
-* @module 	vue
+* Concepto DSL Class Template: A class for compiling x.dsl Concepto diagrams into whatever you want.
+* @name 	template
+* @module 	template
 **/
 import internal_commands from './commands'
-export default class vue extends concepto {
+export default class template extends concepto {
 
 	constructor(file,config={}) {
 		// we can get class name, from package.json name key (after its in its own project)
 		let my_config = {
-			class: 'vue',
+			class: 'template',
 			debug: true
 		};
 		let nuevo_config = {...my_config,...config};
