@@ -1,6 +1,6 @@
 {
   "name": "@concepto/interface",
-  "version": "2.1.95",
+  "version": "2.1.97",
   "description": "Concepto DSL - visually create and maintain modern node.js based apps (@interface)",
   "keywords": [
     "creador",
@@ -33,12 +33,12 @@
     "cheerio": "*",
     "deep-object-diff": "^1.1.0",
     "deepmerge": "^4.2.2",
-    "dsl_parser": "github:puntorigen4u/dsl_parser",
+    "@concepto/dsl_parser": "*",
+    "@concepto/console": "*",
     "extractjs": "^0.3.1",
     "humanize-duration": "^3.25.2",
     "minimatch": "^3.0.4",
     "node-persist": "^3.1.0",
-    "open_console": "github:puntorigen4u/console",
     "print-code": "^1.0.2",
     "recursive-copy": "^2.0.11",
     "safe-eval": "^0.4.1"
