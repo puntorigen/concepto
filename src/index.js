@@ -1228,7 +1228,6 @@ export default class concepto {
 		let obj_diff = require('deep-object-diff').diff;
 		let deep = require('deepmerge');
 		for (let level2 of x_dsl_nodes) {
-			if (this.abort) break; //abort processing if request
 			//this.debug('node',level2);
 			//break;
 			if (!this.x_config.debug && !this.x_config.silent) { 
@@ -1237,6 +1236,12 @@ export default class concepto {
 				this.progress_multi['_total_'].update(counter_, { total_:'x', screen:level2.text, error:false });
 				this.progress_last = this.progress_multi[level2.text];
 				this.progress_last_screen = level2.text;
+			}
+			if (this.abort && !this.x_config.debug && !this.x_config.silent) {
+				this.progress_multi[level2.text].raw().stop();
+				break; //abort processing if request
+			} else if (this.abort) {
+				break; //abort processing if request
 			}
 			//cache: check if current node has any children that were modified since last time
 			let main = await this.cache.getItem(level2.hash_content);
@@ -1310,11 +1315,14 @@ export default class concepto {
 			}
 		});
 		// if there was no error
-		if (!were_errors) {
+		if (!were_errors && !this.abort) {
 			// request creation of files
 			await this.onCreateFiles(resp.nodes);
 			this.x_console.title({ title:`Interpreter ${this.x_config.class.toUpperCase()} ENDED. Full Compilation took: ${this.secsPassed_()}`, color:'green' });
 			this.debug_table('Amount of Time Per Command');
+		} else if (this.abort) {
+			this.x_console.title({ title:`Interpreter ${this.x_config.class.toUpperCase()} ABORTED. Partial Compilation took: ${this.secsPassed_()}`, color:'green' });
+
 		} else {
 			// errors occurred
 			this.x_console.title({ title:`Interpreter ${this.x_config.class.toUpperCase()} ENDED with ERRORS.\nPlease check your console history.\nCompilation took: ${this.secsPassed_()}`, titleColor:'brightRed', color:'red' });	
