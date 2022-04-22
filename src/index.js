@@ -186,7 +186,8 @@ export default class concepto {
 			let cache_path = path.join(tmp.directory,'.concepto','.dsl_cache');
 			await this.cache.init({
 				dir:cache_path,
-				expiredInterval: 3*60*60*1000 //expire within 2hrs 
+				expiredInterval: 3*60*60*1000, //expire within 2hrs
+				forgiveParseErrors: true
 			});
 			if (this.x_config.clean && this.x_config.clean==true) {
 				this.x_console.outT({ message:`cleaning cache as requested ..`, color:'brightCyan' });	
