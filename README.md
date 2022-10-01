@@ -20,6 +20,7 @@ Concepto DSL Base Class: A base class (to be extended) for defining new language
 * [concepto](#module_concepto)
     * _instance_
         * [.init()](#module_concepto+init)
+        * [.addAutocompleteDefinition([text], [icons], [level], [hint], [attributes])](#module_concepto+addAutocompleteDefinition) ⇒ <code>Object</code>
         * [.reply_template([init])](#module_concepto+reply_template) ⇒ <code>Object</code>
         * [.onInit()](#module_concepto+onInit)
         * [.onAfterProcess(processedNode)](#module_concepto+onAfterProcess) ⇒ <code>Object</code>
@@ -67,6 +68,21 @@ Concepto DSL Base Class: A base class (to be extended) for defining new language
 Initializes/starts the class
 
 **Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+<a name="module_concepto+addAutocompleteDefinition"></a>
+
+### concepto.addAutocompleteDefinition([text], [icons], [level], [hint], [attributes]) ⇒ <code>Object</code>
+Adds the given definition for the generation of autocomplete files recods
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| [text] | <code>String</code> | Node text (ex. 'consultar modelo "x",') to be shown to used within list |
+| [icons] | <code>Array</code> | Array of icons (in order) for autocomplete node detection |
+| [level] | <code>Array</code> | Array of levels of node definition to be detected (1=root, 2=child, 3=grandchild, etc) |
+| [hint] | <code>String</code> | Hint to show user for command completion |
+| [attributes] | <code>Object</code> | Possible node command attributes (ex. { 'id':{ required:true, type:'number', values:'1,2,3', hint:'id of datamodel' } }) |
+
 <a name="module_concepto+reply_template"></a>
 
 ### concepto.reply\_template([init]) ⇒ <code>Object</code>

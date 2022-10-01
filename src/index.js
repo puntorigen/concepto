@@ -186,13 +186,20 @@ export default class concepto {
 			let cache_path = path.join(tmp.directory,'.concepto','.dsl_cache');
 			await this.cache.init({
 				dir:cache_path,
-				expiredInterval: 3*60*60*1000, //expire within 2hrs
+				expiredInterval: 3*60*60*1000, //expire within 3hrs
 				forgiveParseErrors: true
 			});
 			if (this.x_config.clean && this.x_config.clean==true) {
 				this.x_console.outT({ message:`cleaning cache as requested ..`, color:'brightCyan' });	
 				await this.cache.clear();
 			}
+			//adds support for generating autocomplete files
+			let autocomplete_path = path.join(tmp.directory,'.concepto','.autocomplete');
+			try {
+				await fs.mkdir(autocomplete_path, { recursive:true });
+			} catch(errdir) {
+			}
+			this.autocomplete = { path:autocomplete_path, records:{} };
 			//diff_from arg (creates {class}_diff.dsl)
 			try {
 				if (this.x_config.diff_from) {
@@ -418,7 +425,7 @@ export default class concepto {
 					await fs.mkdir(target_path);
 				} catch(cpath_err) {}
 				//get our assets path
-				let concepto_loc = path.dirname(require.resolve('concepto/package.json'));
+				let concepto_loc = path.dirname(require.resolve('@concepto/interface')); ///concepto/package.json
 				let export_ = path.join(concepto_loc,'lib','export');
 				let runtime_ = path.join(export_,'runtime');
 				//copy runtime assets to target_path
@@ -479,6 +486,233 @@ export default class concepto {
 			this.x_console.out({ message:`you may only call method init() once!` });
 		}
 		
+	}
+
+	async generateAutocompleteFiles() {
+		//reads object this.autocomplete.records and generates autocomplete files in the autocomplete folder
+		this.x_console.outT({ message:`generating autocomplete files`, color:'brightCyan' });
+		//get x_commands meta data object
+		const meta_ = Object.keys(this.x_commands.meta)[0]; //x_commands meta data for first lib of x_commands 
+		const meta = this.x_commands.meta[meta_]; 
+		//get x_commands name & language definitions
+		const apiLang = meta.name; // has the name of the compiler used (e.g. 'NuxtJS')
+ 		let lang = meta.language; // es,en (language for the autocomplete definitions)
+		lang = lang?lang:'es'; //default lang is es (spanish)
+		//prepare xml
+		let wrapper = `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE api SYSTEM "CompletionXml.dtd" >\n<api language="${apiLang}">\n\t<keywords>\n`;
+		let wrapper_end = `\t</keywords>\n</api>`;
+		//define translation keys
+		let poKeys = {
+			'en': {
+				'Attributes': 'Attributes',
+				'Attribute': 'Attribute',
+				'Values': 'Values',
+				'Hint': 'Hint',
+			},
+			'es': {
+				'Attributes': 'Atributos',
+				'Attribute': 'Atributo',
+				'Values': 'Valores',
+				'Hint': 'Descripción',
+			}
+		};
+		// concepto icons REAL location (for copying autocomplete icons)
+		let path = require('path');
+		let iconsPath = '';
+		try {
+			let concepto_loc = path.dirname(require.resolve('concepto/package.json'));
+			iconsPath = path.join(concepto_loc,'lib','export','runtime','icons');
+			this.x_console.outT({message:'iconsPath:'+iconsPath });
+			let copy = require('recursive-copy');
+			try {
+				await copy(iconsPath, this.autocomplete.path);
+			} catch(ercp) {}
+		} catch(eeeec) {
+			this.x_console.outT({message:'error determining iconsPath:'+iconsPath });
+		}
+		/*
+		- transform keys from this.autocomplete.records into xmls
+		- if generated xml name exists, search 'keyword' tag inside and if it doesn't exist, add it with the new keyword xml
+	
+		let cheerio = require('cheerio');
+		let existing_xml = await fs.readFile(keyfile,'utf-8');
+		let $ = cheerio.load(existing_xml, { ignoreWhitespace: false, xmlMode:true, decodeEntities:false });
+		*/
+		const cheerio = require('cheerio');
+		const attributesToHTMLTable = (attributes={}) => {
+			let html = `<table width='400' border=1 cellspacing=0 cellpadding=2 bordercolor='#AAD3F3'>`;
+			//table header
+			html += `<tr bgcolor='#AAD3F3'>
+			<td colspan='4' valign='top' align='left'>${poKeys[lang]['Attributes']}:</td>
+			</tr><tr bgcolor='#AAD3F3'>
+			<td valign='top' width='10'>R</td>
+			<td valign='top'>${poKeys[lang]['Attribute']}</td>
+			<td valign='top'>${poKeys[lang]['Values']}</td>
+			<td valign='top'>${poKeys[lang]['Hint']}</td>
+			</tr><tr>`;
+			//
+			for (let key in attributes) {
+				let values = attributes[key].values;
+				let hint = attributes[key].hint;
+				html += `<tr bgcolor='#AAD3F3'>`;
+				if (attributes[key].required) {
+					html += `<td>*</td>`;
+				} else {
+					html += `<td> </td>`;
+				}
+				html += `<td>${key}</td><td>${values}</td><td>${hint}</td>`;
+				html += `</tr>`;
+			}
+			html += `</table>`;
+			return html;
+		}
+		const existsKeyword = async (keyword,xml) => {
+			const xmlData = await fs.readFile(xml,'utf-8');
+			const $ = cheerio.load(xmlData, { ignoreWhitespace: false, xmlMode:true, decodeEntities:false });
+			let found = false;
+			$('keyword[name]').toArray().some(function(elem) {
+				const src = $(elem).attr('name');
+				if (src==keyword) {
+					found = true;
+					return true;
+				}
+			});
+			return found;
+		};
+		const addKeywordToXML = async (keywordXML,xml) => {
+			const xmlData = await fs.readFile(xml,'utf-8');
+			const $ = cheerio.load(xmlData, { ignoreWhitespace: false, xmlMode:true, decodeEntities:false });
+			let found = false;
+			$('keyword[name]').toArray().some(function(elem) {
+				$(elem).parent('keywords').append(keywordXML);
+				return true;
+			});
+			await fs.writeFile(xml,$.xml(),'utf-8');
+			return found;
+		};
+
+		const generateKeywordXML = async (record) => {
+			let keyword = record.text;
+			let attributes = record.attributes;
+			let html_attr = attributesToHTMLTable(attributes);
+			let xml = `\t\t<keyword type="other" name="${keyword}">\n`;
+			html = `<BASE href="file://${iconsPath}">\n<img src="idea.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
+			html += `${keyword.replaceAll('\n','<br/>')}<br/>${record.hint.replaceAll('\n','<br/>')}<br/>`+html_attr;
+			xml += `\t\t\t<desc><![CDATA[\n${html}\n]]>\n</desc>\n`;
+			xml += `\t\t</keyword>\n`;
+			return xml;
+		};
+
+		let fs = require('fs').promises;
+		for (let hash_ in this.autocomplete.records) {
+			let hash = this.autocomplete.records[hash_];
+			//this.x_console.outT({ message:`hash_ data ({hash_,hash})`, prefix:'autocomplete', data:{hash_,hash} });
+			let files = hash.keys;
+			for (let file_ of files) {
+				//this.x_console.outT({ message:`processing file ${file_}.xml`, prefix:'autocomplete' });
+				if (file_!=undefined) {
+					let file = path.join(this.autocomplete.path,file_+'.xml');
+					//this.x_console.outT({ message:`full -> ${file}`, prefix:'autocomplete' });
+					//check if file exists and if it contains keyword[name=hash.text]
+					let exists = await this.exists(file);
+					//this.x_console.outT({ message:`exists -> ${exists}`, prefix:'autocomplete' });
+					if (exists==true) {
+						//if file exists, see if it contains the keyword
+						let alreadyExists = await existsKeyword(hash.text,file);
+						//this.x_console.outT({ message:`existsKeyword -> ${alreadyExists}`, prefix:'autocomplete' });
+						if (alreadyExists==false) {
+							//add keyword to existing file (using cheerio)
+							await addKeywordToXML(await generateKeywordXML(hash),file);
+						}
+					} else {
+						//xml file doesn't exist, create one with the keyword data
+						let newXML = `${wrapper}`+(await generateKeywordXML(hash))+`${wrapper_end}`;
+						//this.x_console.outT({ message:`saving new xml file -> ${file_}.xml`, prefix:'autocomplete', data:newXML });
+						//save xml file
+						await fs.writeFile(file,newXML);
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	* Adds the given definition for the generation of autocomplete files recods
+	* @param 	{String}	[text]				- Node text (ex. 'consultar modelo "x",') to be shown to used within list
+	* @param 	{Array}		[icons]				- Array of icons (in order) for autocomplete node detection
+	* @param 	{Array}		[level]				- Array of levels of node definition to be detected (1=root, 2=child, 3=grandchild, etc)
+	* @param 	{String}	[hint]				- Hint to show user for command completion
+	* @param 	{Object}	[attributes]		- Possible node command attributes (ex. { 'id':{ required:true, type:'number', values:'1,2,3', hint:'id of datamodel' } })
+	* @return 	{Object}
+	*/
+	async addAutocompleteDefinition({text='',icons=[],level=[],hint='',attributes={}}={}) {
+		//this.autocomplete = { path:'path', records:{} }
+		//this.autocomplete.records[hash] = { keys,bestKey,text,icons,level,hint,attributes }
+		/*
+		    key def:
+				ex. desktop_new+bell-consultar+modelo-7.xml
+				ex. desktop_new bell,consultar modelo,7.xml
+				decomposed_key = { //break components by - sign
+					icons: ['desktop_new','bell'],
+					text: 'consultar+modelo',
+					level: 7
+				}
+		*/
+		//prepare input text: get first 16 chars of text and replace spaces and : with +
+		const preparedText = text.trim().substring(0,16).replaceAll(' ','+').replaceAll(':','+');
+		//generate all keys alternatives for this definition
+		let keys = [];
+		let key = '';	//best key definition
+		if (icons.length>0) {
+			key = icons.join('+');
+			keys.push(icons.join('+'));	//just the joined icons
+		}
+		if (preparedText.length>0) {
+			if (key.length>0) {
+				key += '-';
+			}
+			keys.push(preparedText);	//just the prepared text
+			key += preparedText;
+		}
+		if (level.length>0) {
+			if (key.length>0) {
+				key += '-';
+			}
+			//append the level items to keys using es6
+			for (let i of level) {
+				keys.push(key+i);	//variations of key with each level
+			}
+			keys.push(...level);	//add the listed levels as well
+			key += level[0];		//just use first level as default for bestkey
+		}
+		if (icons.length>0 && level.length>0) {
+			//icons-level
+			for (let i of level) {
+				keys.push(icons.join('+') + '-' + i);	//add the listed levels combinations as well	
+			}
+		}
+		if (icons.length>0 && preparedText.length>0) {
+			//icons-preparedText
+			keys.push(icons.join('+') + '-' + preparedText);	
+		}
+		if (preparedText.length>0 && level.length>0) {
+			//preparedText-level
+			for (let i of level) {
+				keys.push(preparedText + '-' + i);	//add the listed levels combinations as well
+			}
+		}
+		//add to def
+		let hash = await this.dsl_parser.hash(arguments);
+		this.autocomplete.records[hash] = {
+			keys,
+			bestKey:key,
+			text,
+			icons,
+			level,
+			hint,
+			attributes
+		};
+		return this.autocomplete.records[hash];
 	}
 
 	// **********************************
@@ -1315,6 +1549,8 @@ export default class concepto {
 				return false;
 			}
 		});
+		// generate autocomplete files
+		await this.generateAutocompleteFiles();
 		// if there was no error
 		if (!were_errors && !this.abort) {
 			// request creation of files
