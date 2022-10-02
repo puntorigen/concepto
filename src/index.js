@@ -520,7 +520,7 @@ export default class concepto {
 		let path = require('path');
 		let iconsPath = '';
 		try {
-			let concepto_loc = path.dirname(require.resolve('concepto/package.json'));
+			let concepto_loc = path.dirname(require.resolve('@concepto/interace'));
 			iconsPath = path.join(concepto_loc,'lib','export','runtime','icons');
 			this.x_console.outT({message:'iconsPath:'+iconsPath });
 			let copy = require('recursive-copy');
@@ -596,7 +596,7 @@ export default class concepto {
 			let attributes = record.attributes;
 			let html_attr = attributesToHTMLTable(attributes);
 			let xml = `\t\t<keyword type="other" name="${keyword}">\n`;
-			html = `<BASE href="file://${iconsPath}">\n<img src="idea.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
+			let html = `<BASE href="file://${iconsPath}">\n<img src="idea.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
 			html += `${keyword.replaceAll('\n','<br/>')}<br/>${record.hint.replaceAll('\n','<br/>')}<br/>`+html_attr;
 			xml += `\t\t\t<desc><![CDATA[\n${html}\n]]>\n</desc>\n`;
 			xml += `\t\t</keyword>\n`;
