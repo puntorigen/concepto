@@ -2142,6 +2142,53 @@ export default class concepto {
 		return copy;
 	}
 
+	// CONCEPTO_CLI helper methods
+	async returnPromps() {
+        const prompts_ = require('prompts');
+        let prompts = {
+            ask: async(question,validation=null)=>{
+                const resp = (
+                    await prompts({
+                        type: 'text',
+                        name: 'value',
+                        message: this.x_console.colorize(question),
+                        validate: (value) => {
+                            if (validation) return validation(value);
+                            return true
+                        }
+                    })
+                ).value;
+                return resp;
+            },
+            choose: async(question='', options=[], selected=0) => {
+                const resp = (
+                    await prompts({
+                        type: 'select',
+                        name: 'value',
+                        message: this.x_console.colorize(question),
+                        choices: options,
+                        initial: selected
+                    })
+                ).value;
+                return resp;
+            },
+            multi: async(question='', options=[], max=0, hint=null) => {
+                const resp = (
+                    await prompts({
+                        type: 'multiselect',
+                        name: 'value',
+                        message: this.x_console.colorize(question),
+                        choices: options,
+                        max,
+                        hint: (hint)?hint:'- Space to select. Return to submit'
+                    })
+                ).value;
+                return resp;
+            }
+        }
+        return prompts;
+    }
+
 }
 
 // private helper methods; not to be exported
