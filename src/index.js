@@ -2144,8 +2144,8 @@ export default class concepto {
 
 	// CONCEPTO_CLI helper methods
 	async returnPromps() {
-        const prompts_ = require('prompts');
-        let prompts = {
+        const prompts = require('prompts');
+        let prompts_ = {
             ask: async(question,validation=null)=>{
                 const resp = (
                     await prompts({
@@ -2186,7 +2186,7 @@ export default class concepto {
                 return resp;
             }
         }
-        return prompts;
+        return prompts_;
     }
 
 }
