@@ -597,7 +597,7 @@ export default class concepto {
 			let attributes = record.attributes;
 			let html_attr = attributesToHTMLTable(attributes);
 			let xml = `\t\t<keyword type="other" name="${keyword}">\n`;
-			let html = `<BASE href="file://${iconsPath}">\n<img src="idea.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
+			let html = `<BASE href="file://${iconsPath}/">\n<img src="idea.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
 			html += `${keyword.replaceAll('\n','<br/>')}<br/>${record.hint.replaceAll('\n','<br/>')}<br/>`+html_attr;
 			xml += `\t\t\t<desc><![CDATA[\n${html}\n]]>\n</desc>\n`;
 			xml += `\t\t</keyword>\n`;
