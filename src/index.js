@@ -520,8 +520,9 @@ export default class concepto {
 		let path = require('path');
 		let iconsPath = '';
 		try {
-			let concepto_loc = path.dirname(require.resolve('@concepto/interace'));
-			iconsPath = path.join(concepto_loc,'lib','export','runtime','icons');
+			const root = (require('find-root'))(__dirname)
+			//let concepto_loc = path.dirname(require.resolve('@concepto/interface'));
+			iconsPath = path.join(root,'lib','export','runtime','icons');
 			this.x_console.outT({message:'iconsPath:'+iconsPath });
 			let copy = require('recursive-copy');
 			try {
