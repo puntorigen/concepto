@@ -550,7 +550,7 @@ export default class concepto {
 			<td valign='top'>${poKeys[lang]['Attribute']}</td>
 			<td valign='top'>${poKeys[lang]['Values']}</td>
 			<td valign='top'>${poKeys[lang]['Hint']}</td>
-			</tr><tr>`;
+			</tr>`;
 			//
 			for (let key in attributes) {
 				let values = attributes[key].values;
