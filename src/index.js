@@ -494,11 +494,24 @@ export default class concepto {
 		//reads object this.autocomplete.records and generates autocomplete files in the autocomplete folder
 		this.x_console.outT({ message:`generating autocomplete files`, color:'brightCyan' });
 		//get x_commands meta data object
-		const meta_ = Object.keys(this.x_commands.meta)[0]; //x_commands meta data for first lib of x_commands 
-		const meta = this.x_commands.meta[meta_]; 
+		//const meta_ = Object.keys(this.x_commands.meta)[0]; //x_commands meta data for first lib of x_commands 
+		const meta = this.x_commands.meta;
+		delete meta.hint; delete meta.func; 
+		//this.x_console.outT({ message:`DSL meta data`, color:'brightCyan', data:this.x_commands.meta });
 		//get x_commands name & language definitions
 		const apiLang = meta.name; // has the name of the compiler used (e.g. 'NuxtJS')
- 		let lang = meta.language; // es,en (language for the autocomplete definitions)
+		let lang = meta.language; // es,en (language for the autocomplete definitions)
+		//default autocomplete theme values
+		let theme = {
+			table_bgcolor: "#AAD3F3",
+			tr0_bgcolor: "#AAD3F3",
+			tr_bgcolor: "#AAD3F3",
+			cellpadding: 2,
+			cellspacing: 0,
+		};
+		// overwrite with given theme if defined
+		let custom_theme = (meta.autocomplete && meta.autocomplete.theme)?meta.autocomplete.theme:{};
+		theme = { ...theme, ...custom_theme };
 		lang = lang?lang:'es'; //default lang is es (spanish)
 		//prepare xml
 		let wrapper = `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE api SYSTEM "CompletionXml.dtd" >\n<api language="${apiLang}">\n\t<keywords>\n`;
@@ -506,15 +519,19 @@ export default class concepto {
 		//define translation keys
 		let poKeys = {
 			'en': {
-				'Attributes': 'Attributes',
-				'Attribute': 'Attribute',
+				'Attributes': 'Parameters',
+				'Attribute': 'Param',
 				'Values': 'Values',
+				'Type': 'Type',
+				'Default': 'Default',
 				'Hint': 'Hint',
 			},
 			'es': {
-				'Attributes': 'Atributos',
-				'Attribute': 'Atributo',
+				'Attributes': 'Parametros',
+				'Attribute': 'Param',
 				'Values': 'Valores',
+				'Type': 'Tipo',
+				'Default': 'Default',
 				'Hint': 'Descripción',
 			}
 		};
@@ -525,7 +542,7 @@ export default class concepto {
 			const root = (require('find-root'))(__dirname)
 			//let concepto_loc = path.dirname(require.resolve('@concepto/interface'));
 			iconsPath = path.join(root,'lib','export','runtime','icons');
-			this.x_console.outT({message:'iconsPath:'+iconsPath });
+			//this.x_console.outT({message:'iconsPath:'+iconsPath });
 			let copy = require('recursive-copy');
 			try {
 				await copy(iconsPath, this.autocomplete.path);
@@ -543,28 +560,29 @@ export default class concepto {
 		*/
 		const cheerio = require('cheerio');
 		const attributesToHTMLTable = (attributes={}) => {
-			let html = `<table width='400' border=1 cellspacing=0 cellpadding=2 bordercolor='#AAD3F3'>`;
+			let html = `<table width='400' border=1 cellspacing=${theme.cellspacing} cellpadding=${theme.cellpadding} bordercolor='${theme.table_bgcolor}'>`;
 			//table header
-			html += `<tr bgcolor='#AAD3F3'>
+			html += `<tr bgcolor='${theme.tr0_bgcolor}'>
 			<td colspan='4' valign='top' align='left'>${poKeys[lang]['Attributes']}:</td>
-			</tr><tr bgcolor='#AAD3F3'>
+			</tr><tr bgcolor='${theme.tr0_bgcolor}'>
 			<td valign='top' width='10'>R</td>
 			<td valign='top'>${poKeys[lang]['Attribute']}</td>
-			<td valign='top'>${poKeys[lang]['Values']}</td>
+			<td valign='top'>${poKeys[lang]['Type']}</td>
 			<td valign='top'>${poKeys[lang]['Hint']}</td>
-			</tr>`;
+			</tr>\n`;
 			//
 			for (let key in attributes) {
 				let values = attributes[key].values;
+				if (!values) values = attributes[key].type;
 				let hint = attributes[key].hint;
-				html += `<tr bgcolor='#AAD3F3'>`;
+				html += `<tr bgcolor='${theme.tr_bgcolor}'>\n`;
 				if (attributes[key].required) {
-					html += `<td>*</td>`;
+					html += `<td>*</td>\n`;
 				} else {
-					html += `<td> </td>`;
+					html += `<td> </td>\n`;
 				}
-				html += `<td>${key}</td><td>${values}</td><td>${hint}</td>`;
-				html += `</tr>`;
+				html += `<td>${key}</td>\n<td>${values}</td>\n<td>${hint}</td>\n`;
+				html += `</tr>\n`;
 			}
 			html += `</table>`;
 			return html;
@@ -618,7 +636,6 @@ export default class concepto {
 					//this.x_console.outT({ message:`full -> ${file}`, prefix:'autocomplete' });
 					//check if file exists and if it contains keyword[name=hash.text]
 					let exists = await this.exists(file);
-					//this.x_console.outT({ message:`exists -> ${exists}`, prefix:'autocomplete' });
 					if (exists==true) {
 						//if file exists, see if it contains the keyword
 						let alreadyExists = await existsKeyword(hash.text,file);
@@ -632,7 +649,14 @@ export default class concepto {
 						let newXML = `${wrapper}`+(await generateKeywordXML(hash))+`${wrapper_end}`;
 						//this.x_console.outT({ message:`saving new xml file -> ${file_}.xml`, prefix:'autocomplete', data:newXML });
 						//save xml file
-						await fs.writeFile(file,newXML);
+						try {
+							await fs.writeFile(file,newXML);
+						} catch(errPathE) {
+							// create .autocomplete path if it doesn't exist
+							let justpath_ = path.dirname(file) + path.sep;
+							await fs.mkdir(justpath_, { recursive:true });
+							//this.x_console.outT({ message:`error saving file ${file}`, prefix:'autocomplete', data:errPathE });
+						}
 					}
 				}
 			}
