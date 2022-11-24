@@ -94,9 +94,19 @@ export default class concepto {
 	* @async
 	*/
 	async init() {
+		const path = require('path'), tmp = {};
+		tmp.directory = path.dirname(path.resolve(this.x_flags.dsl));
+		//adds support for generating autocomplete files
+		let autocomplete_path = path.join(tmp.directory,'.concepto','.autocomplete');
+		try {
+			await fs.mkdir(autocomplete_path, { recursive:true });
+		} catch(errdir) {
+		}
+		this.autocomplete = { path:autocomplete_path, records:{} };
+		//
 		if (!this.x_flags.init_ok) {
 			let dsl_parser = require('@concepto/dsl_parser');
-			let path = require('path'), fs = require('fs').promises, tmp = {};
+			let fs = require('fs').promises;
 			// show title
 			this.x_console.title({ 
 				title: `DSL Interpreter ${this.x_config.class.toUpperCase()}\ninit:compiling file:\n${this.x_flags.dsl}`, 
@@ -110,7 +120,6 @@ export default class concepto {
 				this.x_console.out({ message:`error: file ${this.x_flags.dsl} does't exist!`,data:d_err });
 				return;
 			}
-			tmp.directory = path.dirname(path.resolve(this.x_flags.dsl));
 			this.x_console.outT({ message:`time passed since start .. ${this.secsPassed_()}`, color:'cyan' });
 			// @TODO create github compatible DSL
 			if (this.x_config.dsl_git) {
@@ -193,13 +202,6 @@ export default class concepto {
 				this.x_console.outT({ message:`cleaning cache as requested ..`, color:'brightCyan' });	
 				await this.cache.clear();
 			}
-			//adds support for generating autocomplete files
-			let autocomplete_path = path.join(tmp.directory,'.concepto','.autocomplete');
-			try {
-				await fs.mkdir(autocomplete_path, { recursive:true });
-			} catch(errdir) {
-			}
-			this.autocomplete = { path:autocomplete_path, records:{} };
 			//diff_from arg (creates {class}_diff.dsl)
 			try {
 				if (this.x_config.diff_from) {
