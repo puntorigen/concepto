@@ -568,20 +568,19 @@ export default class concepto {
 			<td valign='top' width='10'>R</td>
 			<td valign='top'>${poKeys[lang]['Attribute']}</td>
 			<td valign='top'>${poKeys[lang]['Type']}</td>
+			<td valign='top'>${poKeys[lang]['Default']}</td>
 			<td valign='top'>${poKeys[lang]['Hint']}</td>
 			</tr>\n`;
 			//
 			for (let key in attributes) {
-				let values = attributes[key].values;
-				if (!values) values = attributes[key].type;
-				let hint = attributes[key].hint;
+				let hint = (attributes[key].hint)?attributes[key].hint:'';
 				html += `<tr bgcolor='${theme.tr_bgcolor}'>\n`;
 				if (attributes[key].required) {
 					html += `<td>*</td>\n`;
 				} else {
 					html += `<td> </td>\n`;
 				}
-				html += `<td>${key}</td>\n<td>${values}</td>\n<td>${hint}</td>\n`;
+				html += `<td>${key}</td>\n<td>${(attributes[key].type)?attributes[key].type:''}</td>\n<td>${(attributes[key].default)?attributes[key].default:''}</td>\n<td>${hint}</td>\n`;
 				html += `</tr>\n`;
 			}
 			html += `</table>`;

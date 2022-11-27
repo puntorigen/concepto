@@ -1,6 +1,6 @@
 {
   "name": "@concepto/interface",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "description": "Concepto DSL - visually create and maintain modern node.js based apps (@interface)",
   "keywords": [
     "creador",
