@@ -495,8 +495,11 @@ export default class concepto {
 		// erase all autocomplete files of project 
 		const fs = require('fs').promises;
 		const path = require('path');
-		for (const file of await fs.readdir(this.autocomplete.path)) {
-			await fs.unlink(path.join(this.autocomplete.path, file));
+		try {
+			for (const file of await fs.readdir(this.autocomplete.path)) {
+				await fs.unlink(path.join(this.autocomplete.path, file));
+			}
+		} catch(xx) {
 		}
 	}
 
