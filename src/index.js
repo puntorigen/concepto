@@ -569,10 +569,10 @@ export default class concepto {
 		*/
 		const cheerio = require('cheerio');
 		const attributesToHTMLTable = (attributes={}) => {
-			let html = `<table width='400' border=1 cellspacing=${theme.cellspacing} cellpadding=${theme.cellpadding} bordercolor='${theme.table_bgcolor}'>`;
+			let html = `<table width='100%' border=1 cellspacing=${theme.cellspacing} cellpadding=${theme.cellpadding} bordercolor='${theme.table_bgcolor}'>`;
 			//table header
 			html += `<tr bgcolor='${theme.tr0_bgcolor}'>
-			<td colspan='4' valign='top' align='left'>${poKeys[lang]['Attributes']}:</td>
+			<td colspan='5' valign='top' align='left'>${poKeys[lang]['Attributes']}:</td>
 			</tr><tr bgcolor='${theme.tr0_bgcolor}'>
 			<td valign='top' width='10'>R</td>
 			<td valign='top'>${poKeys[lang]['Attribute']}</td>
@@ -592,6 +592,7 @@ export default class concepto {
 				return new_;
 			};
 			const replaceIcons = (text_) => {
+				/* adds support for icons with {icon:x} within type */
 				let new_ = text_;
 				if (new_.indexOf(`{icon:`)!=-1) {
 					let icons = extract(`{icon:-icon-}`,new_);
@@ -604,12 +605,7 @@ export default class concepto {
 			};
 			for (let key in attributes) {
 				let hint = (attributes[key].hint)?attributes[key].hint:'';
-				/*
-				add support for icons with {icon:x} within type
-<img src="idea.png" align="left" hspace="5" vspace="5" valign="middle" />
-				*/
 				let type_ = (attributes[key].type)?attributes[key].type:'';
-				type_ = replaceIcons(escapeSpecial(type_));
 				//
 				html += `<tr bgcolor='${theme.tr_bgcolor}'>\n`;
 				if (attributes[key].required) {
@@ -617,7 +613,7 @@ export default class concepto {
 				} else {
 					html += `<td> </td>\n`;
 				}
-				html += `<td>${key}</td>\n<td>${type_}</td>\n<td>${(attributes[key].default)?attributes[key].default:''}</td>\n<td>${hint}</td>\n`;
+				html += `<td>${replaceIcons(key)}</td>\n<td>${replaceIcons(escapeSpecial(type_))}</td>\n<td>${(attributes[key].default)?attributes[key].default:''}</td>\n<td>${hint}</td>\n`;
 				html += `</tr>\n`;
 			}
 			html += `</table>`;
