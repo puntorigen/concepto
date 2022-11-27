@@ -490,6 +490,15 @@ export default class concepto {
 		
 	}
 
+	async cleanAutocompleteFiles() {
+		// erase all autocomplete files of project 
+		const fs = require('fs').promises;
+		const path = require('path');
+		for (const file of await fs.readdir(this.autocomplete.path)) {
+			await fs.unlink(path.join(this.autocomplete.path, file));
+		}
+	}
+
 	async generateAutocompleteFiles() {
 		//reads object this.autocomplete.records and generates autocomplete files in the autocomplete folder
 		this.x_console.outT({ message:`generating autocomplete files`, color:'brightCyan' });
@@ -572,15 +581,43 @@ export default class concepto {
 			<td valign='top'>${poKeys[lang]['Hint']}</td>
 			</tr>\n`;
 			//
+			let extract = require('extractjs')({
+				startExtract: '-',
+				endExtract: '-',
+			});
+			const escapeSpecial = (text_) => {
+				let new_ = text_;
+				new_ = new_.replaceAll('->','-&gt;');
+				new_ = new_.replaceAll('<-','-&lt;');
+				return new_;
+			};
+			const replaceIcons = (text_) => {
+				let new_ = text_;
+				if (new_.indexOf(`{icon:`)!=-1) {
+					let icons = extract(`{icon:-icon-}`,new_);
+					if (icons.icon) {
+						new_ = new_.replace(`{icon:${icons.icon}}`,`<img src="${icons.icon}.png" align="left" hspace="5" vspace="5" valign="middle" />`);
+						new_ = replaceIcons(new_);
+					}
+				}
+				return new_;
+			};
 			for (let key in attributes) {
 				let hint = (attributes[key].hint)?attributes[key].hint:'';
+				/*
+				add support for icons with {icon:x} within type
+<img src="idea.png" align="left" hspace="5" vspace="5" valign="middle" />
+				*/
+				let type_ = (attributes[key].type)?attributes[key].type:'';
+				type_ = replaceIcons(escapeSpecial(type_));
+				//
 				html += `<tr bgcolor='${theme.tr_bgcolor}'>\n`;
 				if (attributes[key].required) {
 					html += `<td>*</td>\n`;
 				} else {
 					html += `<td> </td>\n`;
 				}
-				html += `<td>${key}</td>\n<td>${(attributes[key].type)?attributes[key].type:''}</td>\n<td>${(attributes[key].default)?attributes[key].default:''}</td>\n<td>${hint}</td>\n`;
+				html += `<td>${key}</td>\n<td>${type_}</td>\n<td>${(attributes[key].default)?attributes[key].default:''}</td>\n<td>${hint}</td>\n`;
 				html += `</tr>\n`;
 			}
 			html += `</table>`;
