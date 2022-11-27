@@ -201,6 +201,7 @@ export default class concepto {
 			if (this.x_config.clean && this.x_config.clean==true) {
 				this.x_console.outT({ message:`cleaning cache as requested ..`, color:'brightCyan' });	
 				await this.cache.clear();
+				await this.cleanAutocompleteFiles(); //erase autocomplete files
 			}
 			//diff_from arg (creates {class}_diff.dsl)
 			try {
@@ -1022,6 +1023,7 @@ export default class concepto {
 					//x_command version changed! wipe all cache
 					this.x_console.outT({ prefix:'cache,yellow', message:`x_commands meta changed! wiping all cache`, color:'brightYellow' });
 					await this.cache.clear();
+					await this.cleanAutocompleteFiles();
 				} else {
 					if (changed_x_cmds.length>0) this.x_console.outT({ prefix:'cache,yellow', message:`x_commands has changed hash! cleaning cache of x_commands: ${changed_x_cmds.join(',')}`, color:'yellow' });
 					//search which pages (within cache) are using the modified x_commands
@@ -1038,10 +1040,11 @@ export default class concepto {
 							}
 						}
 					}
-					//sleep a little depending on how much was clen...
+					//sleep a little depending on how much was cleaned...
 					let sleep=function(ms) {
 						return new Promise(resolve => setTimeout(resolve, ms));
 					}
+					await this.cleanAutocompleteFiles(); //erase autocomplete files
 					await sleep(5*amount_cleaned);
 					//
 				}
@@ -1049,6 +1052,7 @@ export default class concepto {
 				// if cached_hashses doesn't exist, clean everything from cache (should be first upgrade)
 				this.x_console.outT({ prefix:'cache,yellow', message:`x_commands has changed hash! cleaning all previous cache`, color:'yellow' });
 				await this.cache.clear();
+				await this.cleanAutocompleteFiles(); //erase autocomplete files
 			}
 			//set new comparision to cache
 			await this.cache.setItem('watched_vars',watched_vars);	
