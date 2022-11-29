@@ -712,7 +712,7 @@ export default class concepto {
 				}
 				return new_;
 			};
-			let xml = `\t\t<keyword type="other" name="${record.keyword}">\n`;
+			let xml = `\t\t<keyword type="other" name="${record.text}">\n`;
 			let html = `<BASE href="file://${iconsPath}/">\n`;
 			html += await this.autocompleteContentTemplate(record,replaceIcons,function(icon) {
 				return `<img src="${icon}.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
