@@ -610,6 +610,7 @@ export default class concepto {
 			for (let key in attributes) {
 				let hint = (attributes[key].hint)?attributes[key].hint:'';
 				let type_ = (attributes[key].type)?attributes[key].type:'';
+				let default_ = (attributes[key].default)?attributes[key].default:'';
 				//
 				html += `<tr bgcolor='${theme.tr_bgcolor}'>\n`;
 				if (attributes[key].required) {
@@ -617,7 +618,7 @@ export default class concepto {
 				} else {
 					html += `<td> </td>\n`;
 				}
-				html += `<td>${replaceIcons(key)}</td>\n<td>${replaceIcons(escapeSpecial(type_))}</td>\n<td>${(attributes[key].default)?attributes[key].default:''}</td>\n<td>${hint}</td>\n`;
+				html += `<td>${replaceIcons(key)}</td>\n<td>${replaceIcons(escapeSpecial(type_))}</td>\n<td>${replaceIcons(default_)}</td>\n<td>${replaceIcons(hint)}</td>\n`;
 				html += `</tr>\n`;
 			}
 			html += `</table>`;
