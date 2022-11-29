@@ -21,7 +21,7 @@ Concepto DSL Base Class: A base class (to be extended) for defining new language
     * _instance_
         * [.init()](#module_concepto+init)
         * [.autocompleteContentTemplate(record, render)](#module_concepto+autocompleteContentTemplate) ⇒ <code>string</code>
-        * [.addAutocompleteDefinition([text], [icons], [level], [hint], [attributes])](#module_concepto+addAutocompleteDefinition) ⇒ <code>Object</code>
+        * [.addAutocompleteDefinition([parent], [text], [icons], [level], [hint], [attributes])](#module_concepto+addAutocompleteDefinition) ⇒ <code>Object</code>
         * [.reply_template([init])](#module_concepto+reply_template) ⇒ <code>Object</code>
         * [.onInit()](#module_concepto+onInit)
         * [.onAfterProcess(processedNode)](#module_concepto+onAfterProcess) ⇒ <code>Object</code>
@@ -89,13 +89,14 @@ Should return the rendered HTML
 
 <a name="module_concepto+addAutocompleteDefinition"></a>
 
-### concepto.addAutocompleteDefinition([text], [icons], [level], [hint], [attributes]) ⇒ <code>Object</code>
+### concepto.addAutocompleteDefinition([parent], [text], [icons], [level], [hint], [attributes]) ⇒ <code>Object</code>
 Adds the given definition for the generation of autocomplete files recods
 
 **Kind**: instance method of [<code>concepto</code>](#module_concepto)  
 
 | Param | Type | Description |
 | --- | --- | --- |
+| [parent] | <code>String</code> | Parent autocomplete record; aka extends |
 | [text] | <code>String</code> | Node text (ex. 'consultar modelo "x",') to be shown to used within list |
 | [icons] | <code>Array</code> | Array of icons (in order) for autocomplete node detection |
 | [level] | <code>Array</code> | Array of levels of node definition to be detected (1=root, 2=child, 3=grandchild, etc) |
@@ -494,6 +495,7 @@ An autocomplete object representing an item within the autocomplete list
 
 | Name | Type | Description |
 | --- | --- | --- |
+| parent | <code>string</code> | Optionally indicates if this item extends another existing one. |
 | text | <code>string</code> | Indicates the text to show; aka keyword to complete. |
 | hint | <code>string</code> | Indicates the html to show as the summary for the keyword. |
 | icons | <code>Array.&lt;string&gt;</code> | Array with icon names used in the node. |

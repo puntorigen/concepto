@@ -9,6 +9,7 @@
 /**
  * An autocomplete object representing an item within the autocomplete list
  * @typedef {Object} AutocompleteItem
+ * @property {string} parent - Optionally indicates if this item extends another existing one.
  * @property {string} text - Indicates the text to show; aka keyword to complete.
  * @property {string} hint - Indicates the html to show as the summary for the keyword.
  * @property {string[]} icons - Array with icon names used in the node.
@@ -533,10 +534,11 @@ export default class concepto {
 		// returns the template to show in an autocomplete view
 		const keyword = render.placeholders(record.text);
 		const hint = render.placeholders(record.hint);
-		const attributes = record.attributes;
-		const events = (record.events)?record.events:{};
 		const icons = (record.icons)?record.icons:[];
 		const type = (record.type)?record.type:'internal';
+		let attributes = record.attributes;
+		const events = (record.events)?record.events:{};
+		//
 		let html = '';
 		for (let icon of icons) {
 			if (renderIcon) {
@@ -566,6 +568,7 @@ export default class concepto {
 			table_bgcolor: "#AAD3F3",
 			tr0_bgcolor: "#AAD3F3",
 			tr_bgcolor: "#AAD3F3",
+			tr_inherited_bgcolor: "#C3C3C3",
 			cellpadding: 2,
 			cellspacing: 0,
 		};
@@ -619,6 +622,32 @@ export default class concepto {
 		let $ = cheerio.load(existing_xml, { ignoreWhitespace: false, xmlMode:true, decodeEntities:false });
 		*/
 		const cheerio = require('cheerio');
+		const renderTable = (title, table, render) => {
+			let html = `<table width='100%' border=1 cellspacing=${theme.cellspacing} cellpadding=${theme.cellpadding} bordercolor='${theme.table_bgcolor}'>`;
+			const header = Object.keys(table[0]);
+			//table title
+			html += `<tr bgcolor='${theme.tr0_bgcolor}'>`;
+			html += `<td colspan='${header.length}' valign='top' align='left'>${title}:</td>`;
+			html += `</tr>`;
+			//table header
+			for (let h of header) {
+				html += `<tr bgcolor='${theme.tr0_bgcolor}'>`;
+				html += `<td valign='top'>${h}:</td>`;
+				html += `</tr>`;
+			}
+			//table rows
+			for (let row in table) {
+				html += `<tr bgcolor='${theme.tr_bgcolor}'>`;
+				for (let col in table[row]) {
+					html += `<td valign='top' align='left'>${render.placeholders(table[row][col])}</td>`;
+				}
+				html += `</tr>`;
+			}
+			//close table
+			html += `</table>`;
+			return html;
+		};
+
 		const attributesToHTMLTable = (attributes={},renderIcon) => {
 			let html = `<table width='100%' border=1 cellspacing=${theme.cellspacing} cellpadding=${theme.cellpadding} bordercolor='${theme.table_bgcolor}'>`;
 			//table header
@@ -642,13 +671,14 @@ export default class concepto {
 				new_ = new_.replaceAll('<-','-&lt;');
 				return new_;
 			};
-			const replaceIcons = (text_) => {
+			const replaceIcons = (text_,renderIcon_) => {
+				if (!renderIcon_) renderIcon_ = renderIcon; 
 				/* adds support for icons with {icon:x} within type */
 				let new_ = text_;
 				if (new_.indexOf(`{icon:`)!=-1) {
 					let icons = extract(`{icon:-icon-}`,new_);
 					if (icons.icon) {
-						new_ = new_.replace(`{icon:${icons.icon}}`,renderIcon(icons.icon));
+						new_ = new_.replace(`{icon:${icons.icon}}`,renderIcon_(icons.icon));
 						new_ = replaceIcons(new_);
 					}
 				}
@@ -659,13 +689,20 @@ export default class concepto {
 				let type_ = (attributes[key].type)?attributes[key].type:'';
 				let default_ = (attributes[key].default)?attributes[key].default:'';
 				//
-				html += `<tr bgcolor='${theme.tr_bgcolor}'>\n`;
+				if (attributes[key].inherited) {
+					html += `<tr bgcolor='${theme.tr_inherited_bgcolor}'>\n`;
+				} else {
+					html += `<tr bgcolor='${theme.tr_bgcolor}'>\n`;
+				}
 				if (attributes[key].required) {
 					html += `<td>*</td>\n`;
 				} else {
 					html += `<td> </td>\n`;
 				}
-				html += `<td>${replaceIcons(key)}</td>\n<td>${replaceIcons(escapeSpecial(type_))}</td>\n<td>${replaceIcons(default_)}</td>\n<td>${replaceIcons(hint)}</td>\n`;
+				html += `<td>${replaceIcons(key)}</td>\n`;
+				html += `<td>${replaceIcons(escapeSpecial(type_))}</td>\n`;
+				html += `<td>${replaceIcons(default_)}</td>\n`;
+				html += `<td>${replaceIcons(hint)}</td>\n`;
 				html += `</tr>\n`;
 			}
 			html += `</table>`;
@@ -718,9 +755,38 @@ export default class concepto {
 			const default_render_icon = (icon)=>{
 				return `<img src="${icon}.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
 			};
+			// add inherited attributes/events
+			if (record.parent && record.parent!='' && this.autocomplete.records[record.parent]) {
+				const merge = require('deepmerge');
+				record = merge(this.autocomplete.records[record.parent],record);
+				// determine which 'attributes' are from the parent record (inherited)
+				const parentAttribs = Object.keys(this.autocomplete.records[record.parent].attributes);
+				const recordAttribs = Object.keys(record.attributes);
+				for (let recAttrib of recordAttribs) {
+					if (parentAttribs.includes(recAttrib)) {
+						record.attributes[recAttrib].inherited = true;
+					}
+				}
+				// determine which 'events' are from the parent record (inherited)
+				const parentEvents = Object.keys(this.autocomplete.records[record.parent].events);
+				const recordEvents = Object.keys(record.events);
+				for (let recEvent of recordEvents) {
+					if (parentEvents.includes(recEvent)) {
+						record.events[recEvent].inherited = true;
+					}
+				}
+			}
+			//
 			html += await this.autocompleteContentTemplate(record,{
 				icon: default_render_icon,
-				placeholders: replaceIcons,
+				placeholders: (text,renderIcon)=>{
+					if (renderIcon) {
+						//return attributesToHTMLTable(attrs,renderIcon);
+						return replaceIcons(text,renderIcon);
+					} else {
+						return replaceIcons(text,default_render_icon);
+					}
+				},
 				attrs: (attrs,renderIcon)=>{
 					if (renderIcon) {
 						return attributesToHTMLTable(attrs,renderIcon);
@@ -775,6 +841,7 @@ export default class concepto {
 
 	/**
 	* Adds the given definition for the generation of autocomplete files recods
+	* @param 	{String}	[parent]			- Parent autocomplete record; aka extends
 	* @param 	{String}	[text]				- Node text (ex. 'consultar modelo "x",') to be shown to used within list
 	* @param 	{Array}		[icons]				- Array of icons (in order) for autocomplete node detection
 	* @param 	{Array}		[level]				- Array of levels of node definition to be detected (1=root, 2=child, 3=grandchild, etc)
@@ -782,7 +849,7 @@ export default class concepto {
 	* @param 	{Object}	[attributes]		- Possible node command attributes (ex. { 'id':{ required:true, type:'number', values:'1,2,3', hint:'id of datamodel' } })
 	* @return 	{Object}
 	*/
-	async addAutocompleteDefinition({text='',icons=[],level=[],hint='',attributes={}, events={}}={}) {
+	async addAutocompleteDefinition({text='',parent='',icons=[],level=[],hint='',attributes={}, events={}}={}) {
 		//this.autocomplete = { path:'path', records:{} }
 		//this.autocomplete.records[hash] = { keys,bestKey,text,icons,level,hint,attributes }
 		/*
