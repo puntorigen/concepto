@@ -545,7 +545,7 @@ export default class concepto {
 		}
 		html += `<b>${keyword}</b><br />`;
 		html += `<br />${hint}<br /><br />`;
-		html += renderAttrs(attributes) + '<br />';
+		html += render.attrs(attributes,render.icon) + '<br />';
 		//;
 		return html;
 	}
@@ -619,7 +619,7 @@ export default class concepto {
 		let $ = cheerio.load(existing_xml, { ignoreWhitespace: false, xmlMode:true, decodeEntities:false });
 		*/
 		const cheerio = require('cheerio');
-		const attributesToHTMLTable = (attributes={}) => {
+		const attributesToHTMLTable = (attributes={},renderIcon) => {
 			let html = `<table width='100%' border=1 cellspacing=${theme.cellspacing} cellpadding=${theme.cellpadding} bordercolor='${theme.table_bgcolor}'>`;
 			//table header
 			html += `<tr bgcolor='${theme.tr0_bgcolor}'>
@@ -648,7 +648,7 @@ export default class concepto {
 				if (new_.indexOf(`{icon:`)!=-1) {
 					let icons = extract(`{icon:-icon-}`,new_);
 					if (icons.icon) {
-						new_ = new_.replace(`{icon:${icons.icon}}`,`<img src="${icons.icon}.png" align="left" hspace="5" vspace="5" valign="middle" />`);
+						new_ = new_.replace(`{icon:${icons.icon}}`,renderIcon(icons.icon));
 						new_ = replaceIcons(new_);
 					}
 				}
@@ -715,12 +715,19 @@ export default class concepto {
 			};
 			let xml = `\t\t<keyword type="other" name="${record.text}">\n`;
 			let html = `<BASE href="file://${iconsPath}/">\n`;
+			const default_render_icon = (icon)=>{
+				return `<img src="${icon}.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
+			};
 			html += await this.autocompleteContentTemplate(record,{
-				icon: (icon)=>{
-					return `<img src="${icon}.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
-				},
+				icon: default_render_icon,
 				placeholders: replaceIcons,
-				attrs: attributesToHTMLTable
+				attrs: (attrs,renderIcon)=>{
+					if (renderIcon) {
+						return attributesToHTMLTable(attrs,renderIcon);
+					} else {
+						return attributesToHTMLTable(attrs,default_render_icon);
+					}
+				}
 			});
 			xml += `\t\t\t<desc><![CDATA[\n${html}\n]]>\n</desc>\n`;
 			xml += `\t\t</keyword>\n`;
