@@ -7,6 +7,17 @@
 //import commands from '../../vue_dsl/lib/commands';
 
 /**
+ * An autocomplete object representing an item within the autocomplete list
+ * @typedef {Object} AutocompleteItem
+ * @property {string} text - Indicates the text to show; aka keyword to complete.
+ * @property {string} hint - Indicates the html to show as the summary for the keyword.
+ * @property {string[]} icons - Array with icon names used in the node.
+ * @property {number[]} level - Array with supported level numbers.
+ * @property {Object} attributes - Object with a key for each attribute supported by the node (the key is the attribute name, the value is an object with keys: type, default, hint - supports icon placeholders like {icon:idea} within their texts).
+ * @property {Object} events - Object with a key for each event supported by the node.
+ */
+
+/**
  * A node object representation of a DSL node.
  * @typedef {Object} NodeDSL
  * @property {number} id - Node unique ID.
@@ -503,6 +514,41 @@ export default class concepto {
 		}
 	}
 
+	/**
+	* Renders an HTML template for displaying an autocomplete item within the IDE
+	* Should return the rendered HTML
+	*
+	* @async
+	* @param 	{AutocompleteItem}		record				- autocomplete item record
+	* @param 	{function}				escapePlaceholders	- internal function to escape placeHolders; returns modified string with rendered icons
+	* @param 	{function}				renderIcon			- internal function to call to render any given icon into an img tag; you can either call this or use your own method within the code
+	* @param 	{function}				renderAttrs			- internal function to call to render the item attributes as an html table
+	* @return 	{string}									- HTML template
+	*/
+	async autocompleteContentTemplate(record, escapePlaceholders, renderIcon, renderAttrs) {
+		// param record is an autocomplete object for a given item
+		// returns the template to show in an autocomplete view
+		const keyword = escapePlaceholders(record.text);
+		const hint = escapePlaceholders(record.hint);
+		const attributes = record.attributes;
+		const events = (record.events)?record.events:{};
+		const icons = (record.icons)?record.icons:[];
+		const type = (record.type)?record.type:'internal';
+		let html = '';
+		for (let icon of icons) {
+			if (renderIcon) {
+				html += renderIcon(icon);
+			} else {
+				html += `<img src="${icon}.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
+			}
+		}
+		html += `<b>${keyword}</b><br />`;
+		html += `${hint}<br />`;
+		html += renderAttrs(attributes);
+		//;
+		return html;
+	}
+
 	async generateAutocompleteFiles() {
 		//reads object this.autocomplete.records and generates autocomplete files in the autocomplete folder
 		this.x_console.outT({ message:`generating autocomplete files`, color:'brightCyan' });
@@ -650,12 +696,27 @@ export default class concepto {
 		};
 
 		const generateKeywordXML = async (record) => {
-			let keyword = record.text;
-			let attributes = record.attributes;
-			let html_attr = attributesToHTMLTable(attributes);
-			let xml = `\t\t<keyword type="other" name="${keyword}">\n`;
-			let html = `<BASE href="file://${iconsPath}/">\n<img src="idea.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
-			html += `${keyword.replaceAll('\n','<br/>')}<br/>${record.hint.replaceAll('\n','<br/>')}<br/>`+html_attr;
+			const extract = require('extractjs')({
+				startExtract: '-',
+				endExtract: '-',
+			});
+			const replaceIcons = (text_) => {
+				/* adds support for icons with {icon:x} within type */
+				let new_ = text_;
+				if (new_.indexOf(`{icon:`)!=-1) {
+					let icons = extract(`{icon:-icon-}`,new_);
+					if (icons.icon) {
+						new_ = new_.replace(`{icon:${icons.icon}}`,`<img src="${icons.icon}.png" align="left" hspace="5" vspace="5" valign="middle" />`);
+						new_ = replaceIcons(new_);
+					}
+				}
+				return new_;
+			};
+			let xml = `\t\t<keyword type="other" name="${record.keyword}">\n`;
+			let html = `<BASE href="file://${iconsPath}/">\n`;
+			html += await this.autocompleteContentTemplate(record,replaceIcons,function(icon) {
+				return `<img src="${icon}.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
+			},attributesToHTMLTable);
 			xml += `\t\t\t<desc><![CDATA[\n${html}\n]]>\n</desc>\n`;
 			xml += `\t\t</keyword>\n`;
 			return xml;

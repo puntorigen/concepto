@@ -20,6 +20,7 @@ Concepto DSL Base Class: A base class (to be extended) for defining new language
 * [concepto](#module_concepto)
     * _instance_
         * [.init()](#module_concepto+init)
+        * [.autocompleteContentTemplate(record, escapePlaceholders, renderIcon, renderAttrs)](#module_concepto+autocompleteContentTemplate) ⇒ <code>string</code>
         * [.addAutocompleteDefinition([text], [icons], [level], [hint], [attributes])](#module_concepto+addAutocompleteDefinition) ⇒ <code>Object</code>
         * [.reply_template([init])](#module_concepto+reply_template) ⇒ <code>Object</code>
         * [.onInit()](#module_concepto+onInit)
@@ -58,6 +59,7 @@ Concepto DSL Base Class: A base class (to be extended) for defining new language
         * [.tagParams(struct)](#module_concepto+tagParams) ⇒ <code>string</code>
         * [.struct2params(struct)](#module_concepto+struct2params) ⇒ <code>string</code>
     * _inner_
+        * [~AutocompleteItem](#module_concepto..AutocompleteItem) : <code>Object</code>
         * [~NodeDSL](#module_concepto..NodeDSL) : <code>Object</code>
         * [~Arrow](#module_concepto..Arrow) : <code>Object</code>
         * [~Command](#module_concepto..Command) : <code>Object</code>
@@ -68,6 +70,22 @@ Concepto DSL Base Class: A base class (to be extended) for defining new language
 Initializes/starts the class
 
 **Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+<a name="module_concepto+autocompleteContentTemplate"></a>
+
+### concepto.autocompleteContentTemplate(record, escapePlaceholders, renderIcon, renderAttrs) ⇒ <code>string</code>
+Renders an HTML template for displaying an autocomplete item within the IDE
+Should return the rendered HTML
+
+**Kind**: instance method of [<code>concepto</code>](#module_concepto)  
+**Returns**: <code>string</code> - - HTML template  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| record | <code>AutocompleteItem</code> | autocomplete item record |
+| escapePlaceholders | <code>function</code> | internal function to escape placeHolders; returns modified string with rendered icons |
+| renderIcon | <code>function</code> | internal function to call to render any given icon into an img tag; you can either call this or use your own method within the code |
+| renderAttrs | <code>function</code> | internal function to call to render the item attributes as an html table |
+
 <a name="module_concepto+addAutocompleteDefinition"></a>
 
 ### concepto.addAutocompleteDefinition([text], [icons], [level], [hint], [attributes]) ⇒ <code>Object</code>
@@ -464,6 +482,23 @@ Helper method to transform object keys/values into params for customtags usage
 | Param | Type | Description |
 | --- | --- | --- |
 | struct | <code>Object</code> | Object with keys and values to transform from. |
+
+<a name="module_concepto..AutocompleteItem"></a>
+
+### concepto~AutocompleteItem : <code>Object</code>
+An autocomplete object representing an item within the autocomplete list
+
+**Kind**: inner typedef of [<code>concepto</code>](#module_concepto)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| text | <code>string</code> | Indicates the text to show; aka keyword to complete. |
+| hint | <code>string</code> | Indicates the html to show as the summary for the keyword. |
+| icons | <code>Array.&lt;string&gt;</code> | Array with icon names used in the node. |
+| level | <code>Array.&lt;number&gt;</code> | Array with supported level numbers. |
+| attributes | <code>Object</code> | Object with a key for each attribute supported by the node (the key is the attribute name, the value is an object with keys: type, default, hint - supports icon placeholders like {icon:idea} within their texts). |
+| events | <code>Object</code> | Object with a key for each event supported by the node. |
 
 <a name="module_concepto..NodeDSL"></a>
 
