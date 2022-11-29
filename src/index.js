@@ -782,7 +782,7 @@ export default class concepto {
 	* @param 	{Object}	[attributes]		- Possible node command attributes (ex. { 'id':{ required:true, type:'number', values:'1,2,3', hint:'id of datamodel' } })
 	* @return 	{Object}
 	*/
-	async addAutocompleteDefinition({text='',icons=[],level=[],hint='',attributes={}}={}) {
+	async addAutocompleteDefinition({text='',icons=[],level=[],hint='',attributes={}, events={}}={}) {
 		//this.autocomplete = { path:'path', records:{} }
 		//this.autocomplete.records[hash] = { keys,bestKey,text,icons,level,hint,attributes }
 		/*
@@ -847,7 +847,8 @@ export default class concepto {
 			icons,
 			level,
 			hint,
-			attributes
+			attributes,
+			events,
 		};
 		return this.autocomplete.records[hash];
 	}
