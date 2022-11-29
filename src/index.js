@@ -519,17 +519,20 @@ export default class concepto {
 	* Should return the rendered HTML
 	*
 	* @async
-	* @param 	{AutocompleteItem}		record				- autocomplete item record
-	* @param 	{function}				escapePlaceholders	- internal function to escape placeHolders; returns modified string with rendered icons
-	* @param 	{function}				renderIcon			- internal function to call to render any given icon into an img tag; you can either call this or use your own method within the code
-	* @param 	{function}				renderAttrs			- internal function to call to render the item attributes as an html table
-	* @return 	{string}									- HTML template
+	* @param 	{AutocompleteItem}		record					- autocomplete item record
+	* @param 	{Object}				render					- render object with default methods for rendering autocomplete items
+	* @param 	{function}				render.placeholders		- internal function to escape {icon}:x placeholders; returns modified string with rendered icons
+	* @param 	{function}				render.icon				- internal function to call to render any given icon into an img tag; you can either call this or use your own method within the code
+	* @param 	{function}				render.attrs			- internal function to call to render the item attributes as an html table
+	* @return 	{string}										- HTML template
+
 	*/
-	async autocompleteContentTemplate(record, escapePlaceholders, renderIcon, renderAttrs) {
+
+	async autocompleteContentTemplate(record, render) {
 		// param record is an autocomplete object for a given item
 		// returns the template to show in an autocomplete view
-		const keyword = escapePlaceholders(record.text);
-		const hint = escapePlaceholders(record.hint);
+		const keyword = render.placeholders(record.text);
+		const hint = render.placeholders(record.hint);
 		const attributes = record.attributes;
 		const events = (record.events)?record.events:{};
 		const icons = (record.icons)?record.icons:[];
@@ -537,14 +540,12 @@ export default class concepto {
 		let html = '';
 		for (let icon of icons) {
 			if (renderIcon) {
-				html += renderIcon(icon);
-			} else {
-				html += `<img src="${icon}.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
+				html += render.icon(icon);
 			}
 		}
 		html += `<b>${keyword}</b><br />`;
-		html += `${hint}<br />`;
-		html += renderAttrs(attributes);
+		html += `<br />${hint}<br /><br />`;
+		html += renderAttrs(attributes) + '<br />';
 		//;
 		return html;
 	}
@@ -714,9 +715,13 @@ export default class concepto {
 			};
 			let xml = `\t\t<keyword type="other" name="${record.text}">\n`;
 			let html = `<BASE href="file://${iconsPath}/">\n`;
-			html += await this.autocompleteContentTemplate(record,replaceIcons,function(icon) {
-				return `<img src="${icon}.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
-			},attributesToHTMLTable);
+			html += await this.autocompleteContentTemplate(record,{
+				icon: (icon)=>{
+					return `<img src="${icon}.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
+				},
+				placeholders: replaceIcons,
+				attrs: attributesToHTMLTable
+			});
 			xml += `\t\t\t<desc><![CDATA[\n${html}\n]]>\n</desc>\n`;
 			xml += `\t\t</keyword>\n`;
 			return xml;

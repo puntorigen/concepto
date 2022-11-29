@@ -20,7 +20,7 @@ Concepto DSL Base Class: A base class (to be extended) for defining new language
 * [concepto](#module_concepto)
     * _instance_
         * [.init()](#module_concepto+init)
-        * [.autocompleteContentTemplate(record, escapePlaceholders, renderIcon, renderAttrs)](#module_concepto+autocompleteContentTemplate) ⇒ <code>string</code>
+        * [.autocompleteContentTemplate(record, render)](#module_concepto+autocompleteContentTemplate) ⇒ <code>string</code>
         * [.addAutocompleteDefinition([text], [icons], [level], [hint], [attributes])](#module_concepto+addAutocompleteDefinition) ⇒ <code>Object</code>
         * [.reply_template([init])](#module_concepto+reply_template) ⇒ <code>Object</code>
         * [.onInit()](#module_concepto+onInit)
@@ -72,7 +72,7 @@ Initializes/starts the class
 **Kind**: instance method of [<code>concepto</code>](#module_concepto)  
 <a name="module_concepto+autocompleteContentTemplate"></a>
 
-### concepto.autocompleteContentTemplate(record, escapePlaceholders, renderIcon, renderAttrs) ⇒ <code>string</code>
+### concepto.autocompleteContentTemplate(record, render) ⇒ <code>string</code>
 Renders an HTML template for displaying an autocomplete item within the IDE
 Should return the rendered HTML
 
@@ -82,9 +82,10 @@ Should return the rendered HTML
 | Param | Type | Description |
 | --- | --- | --- |
 | record | <code>AutocompleteItem</code> | autocomplete item record |
-| escapePlaceholders | <code>function</code> | internal function to escape placeHolders; returns modified string with rendered icons |
-| renderIcon | <code>function</code> | internal function to call to render any given icon into an img tag; you can either call this or use your own method within the code |
-| renderAttrs | <code>function</code> | internal function to call to render the item attributes as an html table |
+| render | <code>Object</code> | render object with default methods for rendering autocomplete items |
+| render.placeholders | <code>function</code> | internal function to escape {icon}:x placeholders; returns modified string with rendered icons |
+| render.icon | <code>function</code> | internal function to call to render any given icon into an img tag; you can either call this or use your own method within the code |
+| render.attrs | <code>function</code> | internal function to call to render the item attributes as an html table |
 
 <a name="module_concepto+addAutocompleteDefinition"></a>
 
