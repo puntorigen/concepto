@@ -9,7 +9,8 @@
 /**
  * An autocomplete object representing an item within the autocomplete list
  * @typedef {Object} AutocompleteItem
- * @property {string} parent - Optionally indicates if this item extends another existing one.
+ * @property {string[]} parents - Optionally indicates if this item needs to have any of these parents (node texts for now).
+ * @property {string} extends_ - Optionally indicates if this item extends another existing one.
  * @property {string} text - Indicates the text to show; aka keyword to complete.
  * @property {string} hint - Indicates the html to show as the summary for the keyword.
  * @property {string[]} icons - Array with icon names used in the node.
@@ -114,7 +115,7 @@ export default class concepto {
 			await fs.mkdir(autocomplete_path, { recursive:true });
 		} catch(errdir) {
 		}
-		this.autocomplete = { path:autocomplete_path, records:{}, texts:{} };
+		this.autocomplete = { path:autocomplete_path, records:{}, json:{}, refs:{} };
 		//
 		if (!this.x_flags.init_ok) {
 			let dsl_parser = require('@concepto/dsl_parser');
@@ -736,23 +737,24 @@ export default class concepto {
 			return found;
 		};
 
-		const generateKeywordXML = async (record) => {
+		const replaceIcons = (text_) => {
+			/* adds support for icons with {icon:x} within type */
 			const extract = require('extractjs')({
 				startExtract: '-',
 				endExtract: '-',
 			});
-			const replaceIcons = (text_) => {
-				/* adds support for icons with {icon:x} within type */
-				let new_ = text_;
-				if (new_.indexOf(`{icon:`)!=-1) {
-					let icons = extract(`{icon:-icon-}`,new_);
-					if (icons.icon) {
-						new_ = new_.replace(`{icon:${icons.icon}}`,`<img src="${icons.icon}.png" align="left" hspace="5" vspace="5" valign="middle" />`);
-						new_ = replaceIcons(new_);
-					}
+			let new_ = text_;
+			if (new_.indexOf(`{icon:`)!=-1) {
+				let icons = extract(`{icon:-icon-}`,new_);
+				if (icons.icon) {
+					new_ = new_.replace(`{icon:${icons.icon}}`,`<img src="${icons.icon}.png" align="left" hspace="5" vspace="5" valign="middle" />`);
+					new_ = replaceIcons(new_);
 				}
-				return new_;
-			};
+			}
+			return new_;
+		};
+
+		const generateKeywordXML = async (record) => {	
 			let xml = `\t\t<keyword type="other" name="${record.text}">\n`;
 			let html = `<BASE href="file://${iconsPath}/">\n`;
 			const default_render_icon = (icon)=>{
@@ -760,12 +762,12 @@ export default class concepto {
 			};
 			// mark inherited attributes/events
 			//this.debug('AUTOCOMPLETE RECORDS KEYS',Object.keys(this.autocomplete.texts));
-			if (record.extends_ && record.extends_!='' && this.autocomplete.texts[record.extends_]) {
+			if (record.extends_ && record.extends_!='' && this.autocomplete.refs[record.extends_]) {
 				//const merge = require('deepmerge');
 				//this.debug('merging inherited attributes/events!!!! ',{ extends_:record.extends_, parent:this.autocomplete.texts[record.extends_] });
 				//record = merge(this.autocomplete.texts[record.extends_],record);
 				// determine which 'attributes' are from the extends_ record (inherited)
-				const parentAttribs = Object.keys(this.autocomplete.texts[record.extends_].attributes);
+				const parentAttribs = Object.keys(this.autocomplete.refs[record.extends_].attributes);
 				const recordAttribs = Object.keys(record.attributes);
 				for (let recAttrib of recordAttribs) {
 					if (parentAttribs.includes(recAttrib)) {
@@ -773,7 +775,7 @@ export default class concepto {
 					}
 				}
 				// determine which 'events' are from the extends_ record (inherited)
-				const parentEvents = Object.keys(this.autocomplete.texts[record.extends_].events);
+				const parentEvents = Object.keys(this.autocomplete.refs[record.extends_].events);
 				const recordEvents = Object.keys(record.events);
 				for (let recEvent of recordEvents) {
 					if (parentEvents.includes(recEvent)) {
@@ -783,13 +785,17 @@ export default class concepto {
 			}
 			//
 			html += await this.autocompleteContentTemplate(record,{
-				icon: default_render_icon,
+				icon: (icon)=>{
+					return `<img src="${icon}.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
+				},
 				placeholders: (text,renderIcon)=>{
 					if (renderIcon) {
 						//return attributesToHTMLTable(attrs,renderIcon);
 						return replaceIcons(text,renderIcon);
 					} else {
-						return replaceIcons(text,default_render_icon);
+						return replaceIcons(text,(icon)=>{
+							return `<img src="${icon}.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
+						});
 					}
 				},
 				attrs: (attrs,renderIcon)=>{
@@ -806,6 +812,47 @@ export default class concepto {
 		};
 
 		let fs = require('fs').promises;
+		//
+		// generate .autocomplete/autocomplete.json file 
+		//
+		let jsonKeys = Object.keys(this.autocomplete.json);
+		let autoJson = { nodes:[] };
+		if (jsonKeys.length>0) {
+			let file = path.join(this.autocomplete.path,'autocomplete.json');
+			// generate the html for the hints
+			for (let key of jsonKeys) {
+				let record = this.autocomplete.json[key];
+				if (record.hint) {
+					record.hint = await this.autocompleteContentTemplate(record,{
+						icon: (icon)=>{
+							return `<img src="${icon}.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
+						},
+						placeholders: (text,renderIcon)=>{
+							if (renderIcon) {
+								//return attributesToHTMLTable(attrs,renderIcon);
+								return replaceIcons(text,renderIcon);
+							} else {
+								return replaceIcons(text,(icon)=>{
+									return `<img src="${icon}.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
+								});
+							}
+						},
+						attrs: (attrs,renderIcon)=>{
+							if (renderIcon) {
+								return attributesToHTMLTable(attrs,renderIcon);
+							} else {
+								return attributesToHTMLTable(attrs,default_render_icon);
+							}
+						}
+					});
+				}
+				this.autocomplete.json[key] = record; //this may not be needed anymore
+				autoJson.nodes.push(record);
+			}
+			let json = JSON.stringify(autoJson,null,'\t'); //this.autocomplete.json
+			await this.writeFile(file,json);
+		}
+		//
 		for (let hash_ in this.autocomplete.records) {
 			let hash = this.autocomplete.records[hash_];
 			//this.x_console.outT({ message:`hash_ data ({hash_,hash})`, prefix:'autocomplete', data:{hash_,hash} });
@@ -847,6 +894,7 @@ export default class concepto {
 	/**
 	* Adds the given definition for the generation of autocomplete files recods
 	* @param 	{String}	[extends_]			- extends autocomplete record;
+	* @param 	{Array}		[parents]			- posible node parents of this definition; empty means any
 	* @param 	{String}	[text]				- Node text (ex. 'consultar modelo "x",') to be shown to used within list
 	* @param 	{Array}		[icons]				- Array of icons (in order) for autocomplete node detection
 	* @param 	{Array}		[level]				- Array of levels of node definition to be detected (1=root, 2=child, 3=grandchild, etc)
@@ -854,7 +902,7 @@ export default class concepto {
 	* @param 	{Object}	[attributes]		- Possible node command attributes (ex. { 'id':{ required:true, type:'number', values:'1,2,3', hint:'id of datamodel' } })
 	* @return 	{Object}
 	*/
-	async addAutocompleteDefinition({text='',extends_='',icons=[],level=[],hint='',attributes={}, events={}}={}) {
+	async addAutocompleteDefinition({text='',extends_='',parents=[], icons=[],level=[],hint='',attributes={}, events={}}={}) {
 		//this.autocomplete = { path:'path', records:{}, texts:{} }
 		//this.autocomplete.records[hash] = { keys,bestKey,text,icons,level,hint,attributes }
 		/*
@@ -923,11 +971,15 @@ export default class concepto {
 			events,
 			extends_
 		};
-		this.autocomplete.texts[text] = {
+		//30-nov-22 for new autocomplete.json file support
+		this.autocomplete.json[text] = {
+			parents,
 			text,
 			icons,
 			level,
-			hint,
+			hint
+		};
+		this.autocomplete.refs[text] = {
 			attributes,
 			events,
 			extends_
