@@ -114,7 +114,7 @@ export default class concepto {
 			await fs.mkdir(autocomplete_path, { recursive:true });
 		} catch(errdir) {
 		}
-		this.autocomplete = { path:autocomplete_path, records:{} };
+		this.autocomplete = { path:autocomplete_path, records:{}, texts:{} };
 		//
 		if (!this.x_flags.init_ok) {
 			let dsl_parser = require('@concepto/dsl_parser');
@@ -545,8 +545,11 @@ export default class concepto {
 				html += render.icon(icon);
 			}
 		}
-		html += `<b>${keyword}</b><br />`;
-		html += `<br />${hint}<br /><br />`;
+		html += `<b>${keyword}</b><br /><br />`;
+		if (record.extends_ && record.extends_!='') {
+			html += render.placeholders(`Extends {icon:idea}<b>${record.extends_}</b>.&nbsp;`);
+		}
+		html += `${hint}<br /><br />`;
 		html += render.attrs(attributes,render.icon) + '<br />';
 		//;
 		return html;
@@ -689,7 +692,7 @@ export default class concepto {
 				let type_ = (attributes[key].type)?attributes[key].type:'';
 				let default_ = (attributes[key].default)?attributes[key].default:'';
 				//
-				if (attributes[key].inherited) {
+				if (attributes[key].inherited_) {
 					html += `<tr bgcolor='${theme.tr_inherited_bgcolor}'>\n`;
 				} else {
 					html += `<tr bgcolor='${theme.tr_bgcolor}'>\n`;
@@ -755,24 +758,26 @@ export default class concepto {
 			const default_render_icon = (icon)=>{
 				return `<img src="${icon}.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
 			};
-			// add inherited attributes/events
-			if (record.parent && record.parent!='' && this.autocomplete.records[record.parent]) {
-				const merge = require('deepmerge');
-				record = merge(this.autocomplete.records[record.parent],record);
-				// determine which 'attributes' are from the parent record (inherited)
-				const parentAttribs = Object.keys(this.autocomplete.records[record.parent].attributes);
+			// mark inherited attributes/events
+			//this.debug('AUTOCOMPLETE RECORDS KEYS',Object.keys(this.autocomplete.texts));
+			if (record.extends_ && record.extends_!='' && this.autocomplete.texts[record.extends_]) {
+				//const merge = require('deepmerge');
+				//this.debug('merging inherited attributes/events!!!! ',{ extends_:record.extends_, parent:this.autocomplete.texts[record.extends_] });
+				//record = merge(this.autocomplete.texts[record.extends_],record);
+				// determine which 'attributes' are from the extends_ record (inherited)
+				const parentAttribs = Object.keys(this.autocomplete.texts[record.extends_].attributes);
 				const recordAttribs = Object.keys(record.attributes);
 				for (let recAttrib of recordAttribs) {
 					if (parentAttribs.includes(recAttrib)) {
-						record.attributes[recAttrib].inherited = true;
+						record.attributes[recAttrib].inherited_ = true;
 					}
 				}
-				// determine which 'events' are from the parent record (inherited)
-				const parentEvents = Object.keys(this.autocomplete.records[record.parent].events);
+				// determine which 'events' are from the extends_ record (inherited)
+				const parentEvents = Object.keys(this.autocomplete.texts[record.extends_].events);
 				const recordEvents = Object.keys(record.events);
 				for (let recEvent of recordEvents) {
 					if (parentEvents.includes(recEvent)) {
-						record.events[recEvent].inherited = true;
+						record.events[recEvent].inherited_ = true;
 					}
 				}
 			}
@@ -841,7 +846,7 @@ export default class concepto {
 
 	/**
 	* Adds the given definition for the generation of autocomplete files recods
-	* @param 	{String}	[parent]			- Parent autocomplete record; aka extends
+	* @param 	{String}	[extends_]			- extends autocomplete record;
 	* @param 	{String}	[text]				- Node text (ex. 'consultar modelo "x",') to be shown to used within list
 	* @param 	{Array}		[icons]				- Array of icons (in order) for autocomplete node detection
 	* @param 	{Array}		[level]				- Array of levels of node definition to be detected (1=root, 2=child, 3=grandchild, etc)
@@ -849,8 +854,8 @@ export default class concepto {
 	* @param 	{Object}	[attributes]		- Possible node command attributes (ex. { 'id':{ required:true, type:'number', values:'1,2,3', hint:'id of datamodel' } })
 	* @return 	{Object}
 	*/
-	async addAutocompleteDefinition({text='',parent='',icons=[],level=[],hint='',attributes={}, events={}}={}) {
-		//this.autocomplete = { path:'path', records:{} }
+	async addAutocompleteDefinition({text='',extends_='',icons=[],level=[],hint='',attributes={}, events={}}={}) {
+		//this.autocomplete = { path:'path', records:{}, texts:{} }
 		//this.autocomplete.records[hash] = { keys,bestKey,text,icons,level,hint,attributes }
 		/*
 		    key def:
@@ -916,6 +921,16 @@ export default class concepto {
 			hint,
 			attributes,
 			events,
+			extends_
+		};
+		this.autocomplete.texts[text] = {
+			text,
+			icons,
+			level,
+			hint,
+			attributes,
+			events,
+			extends_
 		};
 		return this.autocomplete.records[hash];
 	}
