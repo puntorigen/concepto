@@ -821,7 +821,7 @@ export default class concepto {
 			let file = path.join(this.autocomplete.path,'autocomplete.json');
 			// generate the html for the hints
 			for (let key of jsonKeys) {
-				let record = this.autocomplete.json[key];
+				let record = {...this.autocomplete.json[key],...this.autocomplete.refs[key]};
 				if (record.hint) {
 					record.hint = await this.autocompleteContentTemplate(record,{
 						icon: (icon)=>{
@@ -846,7 +846,8 @@ export default class concepto {
 						}
 					});
 				}
-				this.autocomplete.json[key] = record; //this may not be needed anymore
+				this.autocomplete.json[key].hint = record.hint;
+				record = this.autocomplete.json[key]; //this may not be needed anymore
 				autoJson.nodes.push(record);
 			}
 			let json = JSON.stringify(autoJson,null,'\t'); //this.autocomplete.json
