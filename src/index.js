@@ -559,6 +559,18 @@ export default class concepto {
 	async generateAutocompleteFiles() {
 		//reads object this.autocomplete.records and generates autocomplete files in the autocomplete folder
 		this.x_console.outT({ message:`generating autocomplete files`, color:'brightCyan' });
+		//adds support for generating autocomplete files
+		const path = require('path'), tmp = {}, fs = require('fs').promises;
+		const tmp_directory = path.dirname(path.resolve(this.x_flags.dsl));
+		let autocomplete_path = path.join(tmp_directory,'.concepto','.autocomplete');
+		try {
+			await fs.mkdir(autocomplete_path, { recursive:true });
+		} catch(errdir) { }
+		if (!this.autocomplete) {	
+			this.autocomplete = { path:autocomplete_path, records:{}, json:{}, refs:{} };
+		} else {
+			this.autocomplete.path = autocomplete_path;
+		}
 		//get x_commands meta data object
 		//const meta_ = Object.keys(this.x_commands.meta)[0]; //x_commands meta data for first lib of x_commands 
 		const meta = this.x_commands.meta;
@@ -603,7 +615,7 @@ export default class concepto {
 			}
 		};
 		// concepto icons REAL location (for copying autocomplete icons)
-		let path = require('path');
+		//let path = require('path');
 		let iconsPath = '';
 		try {
 			const root = (require('find-root'))(__dirname)
@@ -811,7 +823,7 @@ export default class concepto {
 			return xml;
 		};
 
-		let fs = require('fs').promises;
+		//let fs = require('fs').promises;
 		//
 		// generate .autocomplete/autocomplete.json file 
 		//
@@ -921,9 +933,10 @@ export default class concepto {
 				}
 		*/
 		//prepare input text: get first 16 chars of text and replace spaces and : with +
-		const preparedText = text.trim().substring(0,16).replaceAll(' ','+').replaceAll(':','+');
+		//const preparedText = text.trim().substring(0,16).replaceAll(' ','+').replaceAll(':','+');
 		//generate all keys alternatives for this definition
-		let keys = [];
+		//let keys = [];
+		/*
 		let key = '';	//best key definition
 		if (icons.length>0) {
 			key = icons.join('+');
@@ -962,12 +975,12 @@ export default class concepto {
 			for (let i of level) {
 				keys.push(preparedText + '-' + i);	//add the listed levels combinations as well
 			}
-		}
+		}*/
 		//add to def
 		let hash = await this.dsl_parser.hash(arguments);
 		this.autocomplete.records[hash] = {
-			keys,
-			bestKey:key,
+			keys:[],
+			bestKey:'',
 			text,
 			icons,
 			level,
