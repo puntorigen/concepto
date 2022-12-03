@@ -855,7 +855,8 @@ export default class concepto {
 			let json = JSON.stringify(autoJson,null,'\t'); //this.autocomplete.json
 			await this.writeFile(file,json);
 		}
-		//
+		//@DEPRECATED: we are now using autocomplete.json
+		/*
 		for (let hash_ in this.autocomplete.records) {
 			let hash = this.autocomplete.records[hash_];
 			//this.x_console.outT({ message:`hash_ data ({hash_,hash})`, prefix:'autocomplete', data:{hash_,hash} });
@@ -891,7 +892,7 @@ export default class concepto {
 					}
 				}
 			}
-		}
+		}*/
 	}
 
 	/**
