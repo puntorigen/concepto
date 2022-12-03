@@ -910,7 +910,8 @@ export default class concepto {
 	/**
 	* Adds the given definition for the generation of autocomplete files recods
 	* @param 	{String}	[extends_]			- extends autocomplete record;
-	* @param 	{Array}		[parents]			- posible node parents of this definition; empty means any
+	* @param 	{Array}		[parents]			- posible node parents of this definition; empty means any; * means item must be partof
+	* @param 	{Array}		[childrenTypes]		- posible children type nodes; empty means no restrictions
 	* @param 	{String}	[text]				- Node text (ex. 'consultar modelo "x",') to be shown to used within list
 	* @param 	{String}	[type]				- Node type (ex. 'view') to be shown to used within list; empty by default
 	* @param 	{Array}		[icons]				- Array of icons (in order) for autocomplete node detection
@@ -919,7 +920,7 @@ export default class concepto {
 	* @param 	{Object}	[attributes]		- Possible node command attributes (ex. { 'id':{ required:true, type:'number', values:'1,2,3', hint:'id of datamodel' } })
 	* @return 	{Object}
 	*/
-	async addAutocompleteDefinition({text='',type='',extends_='',parents=[], icons=[],level=[],hint='',attributes={}, events={}}={}) {
+	async addAutocompleteDefinition({text='',type='',extends_='',parents=[], childrenTypes=[], icons=[],level=[],hint='',attributes={}, events={}}={}) {
 		//this.autocomplete = { path:'path', records:{}, texts:{} }
 		//this.autocomplete.records[hash] = { keys,bestKey,text,icons,level,hint,attributes }
 		/*
@@ -992,6 +993,7 @@ export default class concepto {
 		//30-nov-22 for new autocomplete.json file support
 		this.autocomplete.json[text] = {
 			parents,
+			childrenTypes,
 			text,
 			type,
 			icons,
