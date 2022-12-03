@@ -845,6 +845,8 @@ export default class concepto {
 							}
 						}
 					});
+					//prepend base href for images
+					record.hint = `<BASE href="file://${iconsPath}/">\n`+record.hint;
 				}
 				this.autocomplete.json[key].hint = record.hint;
 				record = this.autocomplete.json[key]; //this may not be needed anymore
@@ -897,13 +899,14 @@ export default class concepto {
 	* @param 	{String}	[extends_]			- extends autocomplete record;
 	* @param 	{Array}		[parents]			- posible node parents of this definition; empty means any
 	* @param 	{String}	[text]				- Node text (ex. 'consultar modelo "x",') to be shown to used within list
+	* @param 	{String}	[type]				- Node type (ex. 'view') to be shown to used within list; empty by default
 	* @param 	{Array}		[icons]				- Array of icons (in order) for autocomplete node detection
 	* @param 	{Array}		[level]				- Array of levels of node definition to be detected (1=root, 2=child, 3=grandchild, etc)
 	* @param 	{String}	[hint]				- Hint to show user for command completion
 	* @param 	{Object}	[attributes]		- Possible node command attributes (ex. { 'id':{ required:true, type:'number', values:'1,2,3', hint:'id of datamodel' } })
 	* @return 	{Object}
 	*/
-	async addAutocompleteDefinition({text='',extends_='',parents=[], icons=[],level=[],hint='',attributes={}, events={}}={}) {
+	async addAutocompleteDefinition({text='',type='',extends_='',parents=[], icons=[],level=[],hint='',attributes={}, events={}}={}) {
 		//this.autocomplete = { path:'path', records:{}, texts:{} }
 		//this.autocomplete.records[hash] = { keys,bestKey,text,icons,level,hint,attributes }
 		/*
@@ -976,6 +979,7 @@ export default class concepto {
 		this.autocomplete.json[text] = {
 			parents,
 			text,
+			type,
 			icons,
 			level,
 			hint
