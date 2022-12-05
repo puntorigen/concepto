@@ -768,7 +768,7 @@ export default class concepto {
 
 		const generateKeywordXML = async (record) => {	
 			let xml = `\t\t<keyword type="other" name="${record.text}">\n`;
-			let html = `<BASE href="file://${iconsPath}/">\n`;
+			let html = `<BASE href="file://${this.autocomplete.path}/">\n`;
 			const default_render_icon = (icon)=>{
 				return `<img src="${icon}.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
 			};
@@ -858,7 +858,7 @@ export default class concepto {
 						}
 					});
 					//prepend base href for images
-					record.hint = `<BASE href="file://${iconsPath}/">\n`+record.hint;
+					record.hint = `<BASE href="file://${this.autocomplete.path}/">\n`+record.hint;
 				}
 				this.autocomplete.json[key].hint = record.hint;
 				record = this.autocomplete.json[key]; //this may not be needed anymore
