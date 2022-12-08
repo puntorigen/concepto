@@ -822,6 +822,7 @@ export default class concepto {
 	* @param 	{String}	[extends_]			- extends autocomplete record;
 	* @param 	{Array}		[parents]			- posible node parents of this definition; empty means any; * means item must be partof
 	* @param 	{Array}		[childrenTypes]		- posible children type nodes; empty means no restrictions
+	* @param 	{String}	[id]				- Unique AC node identifier (usually the 'text')
 	* @param 	{String}	[text]				- Node text (ex. 'consultar modelo "x",') to be shown to used within list
 	* @param 	{String}	[type]				- Node type (ex. 'view') to be shown to used within list; empty by default
 	* @param 	{Array}		[icons]				- Array of icons (in order) for autocomplete node detection
@@ -830,7 +831,7 @@ export default class concepto {
 	* @param 	{Object}	[attributes]		- Possible node command attributes (ex. { 'id':{ required:true, type:'number', values:'1,2,3', hint:'id of datamodel' } })
 	* @return 	{Object}
 	*/
-	async addAutocompleteDefinition({text='',type='',extends_='',parents=[], childrenTypes=[], icons=[],level=[],hint='',attributes={}, events={}}={}) {
+	async addAutocompleteDefinition({id='',text='',type='',extends_='',parents=[], childrenTypes=[], icons=[],level=[],hint='',attributes={}, events={}}={}) {
 		//this.autocomplete = { path:'path', records:{}, texts:{} }
 		//this.autocomplete.records[hash] = { keys,bestKey,text,icons,level,hint,attributes }
 		/*
@@ -889,6 +890,7 @@ export default class concepto {
 		}*/
 		//add to def
 		let hash = await this.dsl_parser.hash(arguments);
+		if (id=='') id=text;
 		this.autocomplete.records[hash] = {
 			keys:[],
 			bestKey:'',
@@ -901,7 +903,7 @@ export default class concepto {
 			extends_
 		};
 		//30-nov-22 for new autocomplete.json file support
-		this.autocomplete.json[text] = {
+		this.autocomplete.json[id] = {
 			parents,
 			childrenTypes,
 			text,
@@ -910,7 +912,7 @@ export default class concepto {
 			level,
 			hint
 		};
-		this.autocomplete.refs[text] = {
+		this.autocomplete.refs[id] = {
 			attributes,
 			events,
 			extends_

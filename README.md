@@ -21,7 +21,7 @@ Concepto DSL Base Class: A base class (to be extended) for defining new language
     * _instance_
         * [.init()](#module_concepto+init)
         * [.autocompleteContentTemplate(record, render)](#module_concepto+autocompleteContentTemplate) ⇒ <code>string</code>
-        * [.addAutocompleteDefinition([extends_], [parents], [childrenTypes], [text], [type], [icons], [level], [hint], [attributes])](#module_concepto+addAutocompleteDefinition) ⇒ <code>Object</code>
+        * [.addAutocompleteDefinition([extends_], [parents], [childrenTypes], [id], [text], [type], [icons], [level], [hint], [attributes])](#module_concepto+addAutocompleteDefinition) ⇒ <code>Object</code>
         * [.reply_template([init])](#module_concepto+reply_template) ⇒ <code>Object</code>
         * [.onInit()](#module_concepto+onInit)
         * [.onAfterProcess(processedNode)](#module_concepto+onAfterProcess) ⇒ <code>Object</code>
@@ -89,7 +89,7 @@ Should return the rendered HTML
 
 <a name="module_concepto+addAutocompleteDefinition"></a>
 
-### concepto.addAutocompleteDefinition([extends_], [parents], [childrenTypes], [text], [type], [icons], [level], [hint], [attributes]) ⇒ <code>Object</code>
+### concepto.addAutocompleteDefinition([extends_], [parents], [childrenTypes], [id], [text], [type], [icons], [level], [hint], [attributes]) ⇒ <code>Object</code>
 Adds the given definition for the generation of autocomplete files recods
 
 **Kind**: instance method of [<code>concepto</code>](#module_concepto)  
@@ -99,6 +99,7 @@ Adds the given definition for the generation of autocomplete files recods
 | [extends_] | <code>String</code> | extends autocomplete record; |
 | [parents] | <code>Array</code> | posible node parents of this definition; empty means any; * means item must be partof |
 | [childrenTypes] | <code>Array</code> | posible children type nodes; empty means no restrictions |
+| [id] | <code>String</code> | Unique AC node identifier (usually the 'text') |
 | [text] | <code>String</code> | Node text (ex. 'consultar modelo "x",') to be shown to used within list |
 | [type] | <code>String</code> | Node type (ex. 'view') to be shown to used within list; empty by default |
 | [icons] | <code>Array</code> | Array of icons (in order) for autocomplete node detection |
