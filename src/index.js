@@ -749,31 +749,7 @@ export default class concepto {
 			}
 			html += `</table>`;
 			return html;
-		}
-		const existsKeyword = async (keyword,xml) => {
-			const xmlData = await fs.readFile(xml,'utf-8');
-			const $ = cheerio.load(xmlData, { ignoreWhitespace: false, xmlMode:true, decodeEntities:false });
-			let found = false;
-			$('keyword[name]').toArray().some(function(elem) {
-				const src = $(elem).attr('name');
-				if (src==keyword) {
-					found = true;
-					return true;
-				}
-			});
-			return found;
-		};
-		const addKeywordToXML = async (keywordXML,xml) => {
-			const xmlData = await fs.readFile(xml,'utf-8');
-			const $ = cheerio.load(xmlData, { ignoreWhitespace: false, xmlMode:true, decodeEntities:false });
-			let found = false;
-			$('keyword[name]').toArray().some(function(elem) {
-				$(elem).parent('keywords').append(keywordXML);
-				return true;
-			});
-			await fs.writeFile(xml,$.xml(),'utf-8');
-			return found;
-		};
+		}		
 
 		const replaceIcons = (text_) => {
 			/* adds support for icons with {icon:x} within type */
@@ -790,63 +766,6 @@ export default class concepto {
 				}
 			}
 			return new_;
-		};
-
-		const generateKeywordXML = async (record) => {	
-			let xml = `\t\t<keyword type="other" name="${record.text}">\n`;
-			let html = `<BASE href="file://${this.autocomplete.path}/">\n`;
-			const default_render_icon = (icon)=>{
-				return `<img src="${icon}.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
-			};
-			// mark inherited attributes/events
-			//this.debug('AUTOCOMPLETE RECORDS KEYS',Object.keys(this.autocomplete.texts));
-			if (record.extends_ && record.extends_!='' && this.autocomplete.refs[record.extends_]) {
-				//const merge = require('deepmerge');
-				//this.debug('merging inherited attributes/events!!!! ',{ extends_:record.extends_, parent:this.autocomplete.texts[record.extends_] });
-				//record = merge(this.autocomplete.texts[record.extends_],record);
-				// determine which 'attributes' are from the extends_ record (inherited)
-				const parentAttribs = Object.keys(this.autocomplete.refs[record.extends_].attributes);
-				const recordAttribs = Object.keys(record.attributes);
-				for (let recAttrib of recordAttribs) {
-					if (parentAttribs.includes(recAttrib)) {
-						record.attributes[recAttrib].inherited_ = true;
-					}
-				}
-				// determine which 'events' are from the extends_ record (inherited)
-				const parentEvents = Object.keys(this.autocomplete.refs[record.extends_].events);
-				const recordEvents = Object.keys(record.events);
-				for (let recEvent of recordEvents) {
-					if (parentEvents.includes(recEvent)) {
-						record.events[recEvent].inherited_ = true;
-					}
-				}
-			}
-			//
-			html += await this.autocompleteContentTemplate(prepareInherited(record),{
-				icon: (icon)=>{
-					return `<img src="${icon}.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
-				},
-				placeholders: (text,renderIcon)=>{
-					if (renderIcon) {
-						//return attributesToHTMLTable(attrs,renderIcon);
-						return replaceIcons(text,renderIcon);
-					} else {
-						return replaceIcons(text,(icon)=>{
-							return `<img src="${icon}.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
-						});
-					}
-				},
-				attrs: (attrs,renderIcon)=>{
-					if (renderIcon) {
-						return attributesToHTMLTable(attrs,renderIcon);
-					} else {
-						return attributesToHTMLTable(attrs,default_render_icon);
-					}
-				}
-			});
-			xml += `\t\t\t<desc><![CDATA[\n${html}\n]]>\n</desc>\n`;
-			xml += `\t\t</keyword>\n`;
-			return xml;
 		};
 
 		//let fs = require('fs').promises;
@@ -888,49 +807,14 @@ export default class concepto {
 				}
 				this.autocomplete.json[key].hint = record.hint;
 				record = this.autocomplete.json[key]; //this may not be needed anymore
-				autoJson.nodes.push(record);
+				//don't push record if it is a '-private-' record key
+				if (key.indexOf('-private-')==-1) {
+					autoJson.nodes.push(record);
+				}
 			}
 			let json = JSON.stringify(autoJson,null,'\t'); //this.autocomplete.json
 			await this.writeFile(file,json);
 		}
-		//@DEPRECATED: we are now using autocomplete.json
-		/*
-		for (let hash_ in this.autocomplete.records) {
-			let hash = this.autocomplete.records[hash_];
-			//this.x_console.outT({ message:`hash_ data ({hash_,hash})`, prefix:'autocomplete', data:{hash_,hash} });
-			let files = hash.keys;
-			for (let file_ of files) {
-				//this.x_console.outT({ message:`processing file ${file_}.xml`, prefix:'autocomplete' });
-				if (file_!=undefined) {
-					let file = path.join(this.autocomplete.path,file_+'.xml');
-					//this.x_console.outT({ message:`full -> ${file}`, prefix:'autocomplete' });
-					//check if file exists and if it contains keyword[name=hash.text]
-					let exists = await this.exists(file);
-					if (exists==true) {
-						//if file exists, see if it contains the keyword
-						let alreadyExists = await existsKeyword(hash.text,file);
-						//this.x_console.outT({ message:`existsKeyword -> ${alreadyExists}`, prefix:'autocomplete' });
-						if (alreadyExists==false) {
-							//add keyword to existing file (using cheerio)
-							await addKeywordToXML(await generateKeywordXML(hash),file);
-						}
-					} else {
-						//xml file doesn't exist, create one with the keyword data
-						let newXML = `${wrapper}`+(await generateKeywordXML(hash))+`${wrapper_end}`;
-						//this.x_console.outT({ message:`saving new xml file -> ${file_}.xml`, prefix:'autocomplete', data:newXML });
-						//save xml file
-						try {
-							await fs.writeFile(file,newXML);
-						} catch(errPathE) {
-							// create .autocomplete path if it doesn't exist
-							let justpath_ = path.dirname(file) + path.sep;
-							await fs.mkdir(justpath_, { recursive:true });
-							//this.x_console.outT({ message:`error saving file ${file}`, prefix:'autocomplete', data:errPathE });
-						}
-					}
-				}
-			}
-		}*/
 	}
 
 	/**
