@@ -664,6 +664,32 @@ export default class concepto {
 			return html;
 		};
 
+		const prepareInherited = (record) => {
+			//this.debug('prepareInherited');
+			if (record.extends_ && record.extends_!='' && this.autocomplete.refs[record.extends_]) {
+				//const merge = require('deepmerge');
+				//this.debug('merging inherited attributes/events!!!! ',{ extends_:record.extends_, parent:this.autocomplete.refs[record.extends_] });
+				//record = merge(this.autocomplete.texts[record.extends_],record);
+				// determine which 'attributes' are from the extends_ record (inherited)
+				const parentAttribs = Object.keys(this.autocomplete.refs[record.extends_].attributes);
+				const recordAttribs = Object.keys(record.attributes);
+				for (let recAttrib of recordAttribs) {
+					if (parentAttribs.includes(recAttrib)) {
+						record.attributes[recAttrib].inherited_ = true;
+					}
+				}
+				// determine which 'events' are from the extends_ record (inherited)
+				const parentEvents = Object.keys(this.autocomplete.refs[record.extends_].events);
+				const recordEvents = Object.keys(record.events);
+				for (let recEvent of recordEvents) {
+					if (parentEvents.includes(recEvent)) {
+						record.events[recEvent].inherited_ = true;
+					}
+				}
+			}
+			return record;
+		};
+
 		const attributesToHTMLTable = (attributes={},renderIcon) => {
 			let html = `<table width='100%' border=1 cellspacing=${theme.cellspacing} cellpadding=${theme.cellpadding} bordercolor='${theme.table_bgcolor}'>`;
 			//table header
@@ -796,7 +822,7 @@ export default class concepto {
 				}
 			}
 			//
-			html += await this.autocompleteContentTemplate(record,{
+			html += await this.autocompleteContentTemplate(prepareInherited(record),{
 				icon: (icon)=>{
 					return `<img src="${icon}.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
 				},
@@ -835,7 +861,7 @@ export default class concepto {
 			for (let key of jsonKeys) {
 				let record = {...this.autocomplete.json[key],...this.autocomplete.refs[key]};
 				if (record.hint) {
-					record.hint = await this.autocompleteContentTemplate(record,{
+					record.hint = await this.autocompleteContentTemplate(prepareInherited(record),{
 						icon: (icon)=>{
 							return `<img src="${icon}.png" align="left" hspace="5" vspace="5" valign="middle" />&nbsp;`;
 						},
