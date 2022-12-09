@@ -524,6 +524,25 @@ export default class concepto {
         await this.generateAutoComplete(ac);
     }
 
+	params2attr(params) {
+        //returns a object with the params as keys, and empty attr object as values
+        let resp = {};
+        if (typeof params=='string') {                    
+            //params is a list string of params, like 'a,b,c'
+            params.split(',').forEach((param) => {
+                resp[param] = {
+                    type: 'string',
+                    default: '',
+                    hint: ''
+                };
+            });
+        } else if (typeof params=='object') {
+            //return params as is, or re-map its keys to match an attr object
+            resp = params;
+        }
+        return resp;
+    };
+
     async generateAutoComplete(auto) {
         const extractIcons = (content,icons) => {
             //extracts the icons from the content ({icon:x}{icon:y}z , returns { content:'z', icons:[x,y] })
