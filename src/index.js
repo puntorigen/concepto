@@ -504,6 +504,137 @@ export default class concepto {
 		
 	}
 
+	async prepareCommandsAutocomplete() {
+        //grab autocomplete keys from x_commands, and add them to autocomplete
+        //for each command in x_commands; @todo move this to concepto parent class 
+        this.x_console.outT({ message: `Adding x_commands autocomplete definitions!`, color: `cyan` });
+        let ac={};
+        for (let cmd in this.x_commands) {
+            //if command has autocomplete
+            if (cmd!='meta' && this.x_commands[cmd].autocomplete) {
+                //for each autocomplete key
+                for (let key in this.x_commands[cmd].autocomplete) {
+                    //this.x_console.outT({ message: `AC ${key} on this.x_commands[${cmd}].autocomplete...`, color: `cyan`, data:this.x_commands[cmd].autocomplete[key] });
+                    let tmpItem = this.x_commands[cmd].autocomplete[key];
+                    tmpItem.id = key;
+                    ac[key] = tmpItem;
+                }
+            }
+        }
+        await this.generateAutoComplete(ac);
+    }
+
+    async generateAutoComplete(auto) {
+        const extractIcons = (content,icons) => {
+            //extracts the icons from the content ({icon:x}{icon:y}z , returns { content:'z', icons:[x,y] })
+            let extract = require('extractjs')({
+				startExtract: '[',
+				endExtract: ']',
+			});
+            if (!icons) icons=[];
+            let new_ = content;
+            let resp = { content, icons };
+            if (content.indexOf('{icon:')>-1) {            
+                let elements = extract(`{icon:[name]}`,new_);
+                if (elements.name && !icons.includes(elements.name)) {
+                    icons.push(elements.name);
+                    new_ = new_.replace(`{icon:${elements.name}}`,''); 
+                    resp.content = new_;
+                    resp.icons = icons;
+                    if (new_.indexOf('{icon:')!=-1) {
+                        resp = extractIcons(new_,icons);
+                    }
+                }
+            }
+            return resp;
+        };
+        /* add support for remapping attributes.'posibleChildren' key existance */
+        Object.keys(auto).forEach((tag) => {
+            // add 'type' to auto[tag] if 'icons' contain 'idea'=view, 'help'=event, 'penguin'=script, 'desktop_new'=command
+            if (auto[tag].type.trim()=='') {
+                if (auto[tag].icons && auto[tag].icons.includes('idea')) {
+                    auto[tag].type = 'view';
+                } else if (auto[tag].icons && auto[tag].icons.includes('help')) {
+                    auto[tag].type = 'event';
+                } else if (auto[tag].icons && auto[tag].icons.includes('penguin')) {
+                    auto[tag].type = 'script';
+                } else if (auto[tag].icons && auto[tag].icons.includes('desktop_new')) {
+                    auto[tag].type = 'command';
+                }
+            }
+            // for each attribute
+            Object.keys(auto[tag].attributes).forEach((attr_) => {
+                // remove all {icon:x} strings from attr_
+                let attr__ = attr_.replace(/{icon:[^}]*}/g,'');
+                let attr = auto[tag].attributes[attr_];
+                // also add the attribute to the auto object if it contains {icon:list} within its keyname
+                if (attr_.indexOf('{icon:list}')!=-1) {
+                    let type__ = (attr_.indexOf('{icon:help}')!=-1)?'event-attribute':'attribute';
+                    type__ = (attr_.indexOf('{icon:idea}')!=-1)?'view-attribute':type__;
+                    if (!auto[attr__]) {
+                        auto[attr__] = {
+                            text: (attr.text)?attr.text:attr__,
+                            type: type__,
+                            parents: [tag],
+                            icons: extractIcons(attr_).icons,
+                            level: [],
+                            hint: attr.hint,
+                            childrenTypes: (attr.childrenTypes)?attr.childrenTypes:[],
+                            attributes: {}
+                        };
+                    } else {
+                        // if it already existed, add to parents array if it was not there already
+                        if (!auto[attr__].parents.includes(tag)) auto[attr__].parents.push(tag);
+                    }
+                    //
+                }
+            });
+            // for each event, create an auto[tag] item if it doesn't exist, and add 'tag' as a parents item (if it wasn't there already)
+            if (auto[tag].events) {
+                
+                Object.keys(auto[tag].events).forEach((event) => {
+                    if (!auto[event]) {
+                        auto[event] = {
+                            text: event,
+                            type: 'event',
+                            parents: [tag],
+                            icons: ['help'],
+                            level: [],
+                            childrenTypes: (auto[tag].events[event].childrenTypes)?auto[tag].events[event].childrenTypes:[],
+                            hint: auto[tag].events[event].hint,
+                            attributes: (auto[tag].events[event].params)?this.params2attr(auto[tag].events[event].params):(auto[tag].events[event].attributes)?auto[tag].events[event].attributes:{}
+                        };
+                    } else {
+                        // if it already existed, add to parents array if it was not there already
+                        if (!auto[event].parents.includes(tag)) auto[event].parents.push(tag);
+                    }
+                });
+            }
+        });
+        //console.log('auto POST',auto);
+        //
+        let tags = Object.keys(auto).map((tag) => {
+            return {
+                id: tag,
+                text: (auto[tag].text && auto[tag].text!='')?auto[tag].text:tag, //.replaceAll('*',''),
+                //text: tag, //.replaceAll('*',''),
+                childrenTypes: (auto[tag].childrenTypes)?auto[tag].childrenTypes:[],
+                type: (auto[tag].type)?auto[tag].type:'',
+                icons: auto[tag].icons,
+                level: auto[tag].level,
+                hint: auto[tag].hint,
+                attributes: auto[tag].attributes,
+                events: (auto[tag].events)?auto[tag].events:{},
+                extends_: (auto[tag].extends_)?auto[tag].extends_:'',
+                parents: (auto[tag].parents)?auto[tag].parents:[],
+            }
+        });
+        // add to context
+        for (let key in tags) {
+            await this.addAutocompleteDefinition(tags[key]);
+        }
+    }
+
 	async cleanAutocompleteFiles() {
 		// erase all autocomplete files of project 
 		const fs = require('fs').promises;
@@ -1610,6 +1741,10 @@ export default class concepto {
 		let x_dsl_nodes = await this.dsl_parser.getNodes({ level:2, nodes_raw:true, hash_content:true });
 		// add abort support
 		this.abort = false;
+		this.debug('calling prepareCommandsAutocomplete');
+		this.debug_time({ id:'prepareAC' });
+		await this.prepareCommandsAutocomplete();
+		this.debug_timeEnd({ id:'prepareAC' });
 		this.debug('calling onPrepare');
 		this.debug_time({ id:'onPrepare' });
 		await this.onPrepare();
