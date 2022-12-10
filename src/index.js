@@ -447,7 +447,7 @@ export default class concepto {
 				//copy runtime assets to target_path
 				let copy = require('recursive-copy');
 				try {
-					await copy(runtime_, target_path);
+					await copy(runtime_, target_path, { overwrite:true });
 				} catch(ercp) {}
 				//transform to .dsl file to html
 				let spawn = require('await-spawn');
@@ -774,7 +774,7 @@ export default class concepto {
 			//this.x_console.outT({message:'iconsPath:'+iconsPath });
 			let copy = require('recursive-copy');
 			try {
-				await copy(iconsPath, this.autocomplete.path);
+				await copy(iconsPath, this.autocomplete.path, { overwrite:true });
 			} catch(ercp) {}
 		} catch(eeeec) {
 			this.x_console.outT({message:'error determining iconsPath:'+iconsPath });
@@ -954,6 +954,7 @@ export default class concepto {
 					});
 					//prepend base href for images
 					record.hint = `<BASE href="file://${this.autocomplete.path}/">\n`+record.hint;
+					//record.hint = `<body bgcolor="white">`+record.hint+`</body>`;
 				}
 				this.autocomplete.json[key].hint = record.hint;
 				record = this.autocomplete.json[key]; //this may not be needed anymore
