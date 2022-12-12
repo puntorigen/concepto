@@ -587,7 +587,42 @@ export default class concepto {
                 let attr__ = attr_.replace(/{icon:[^}]*}/g,'');
                 let attr = auto[tag].attributes[attr_];
                 // also add the attribute to the auto object if it contains {icon:list} within its keyname
-                if (attr_.indexOf('{icon:list}')!=-1) {
+                const attrIcons = extractIcons(attr_).icons;
+				if (attrIcons.length==1 && attrIcons[0]=='list') {
+					// if the only attribute icon is 'list', then process its 'type' as posible new ac tags
+					const typeNameForNewChildren = tag+'-'+attr__;
+					// add typeNameForNewChildren to attr childrenTypes
+					if (attr.childrenTypes && attr.childrenTypes.length>0) {
+						attr.childrenTypes.push(typeNameForNewChildren);
+					} else {
+						attr.childrenTypes = [typeNameForNewChildren];
+					}
+					if (attr.type.length>0) {
+						for (let attrType of attr.type.split(',')) {
+							//gen unique name for attrType (newTagName)
+							let newTagName = tag+'-'+attr__+'-'+attrType;
+							if (!auto[newTagName]) {
+								auto[newTagName] = {
+									text: attrType,
+									type: typeNameForNewChildren,
+									parents: [attr__],
+									icons: [],
+									level: [],
+									hint: `Value of ${attrType} for attribute ${attr__} of ${tag}`,
+									childrenTypes: ['none'],
+									attributes: {}
+								};
+							} else {
+								if (!auto[newTagName].parents.includes(tag)) {
+									auto[newTagName].parents.push(tag);
+								}
+							}
+						}
+					}
+
+				}
+				if (attr_.indexOf('{icon:list}')!=-1) {
+					// add attribute itself as an AC item of the parent
                     let type__ = (attr_.indexOf('{icon:help}')!=-1)?'event-attribute':'attribute';
                     type__ = (attr_.indexOf('{icon:idea}')!=-1)?'view-attribute':type__;
                     if (!auto[attr__]) {
