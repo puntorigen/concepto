@@ -634,7 +634,7 @@ export default class concepto {
                             level: [],
                             hint: attr.hint,
                             childrenTypes: (attr.childrenTypes)?attr.childrenTypes:[],
-                            attributes: {}
+                            attributes: (attr.attributes)?attr.attributes:{}
                         };
                     } else {
                         // if it already existed, add to parents array if it was not there already
