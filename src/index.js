@@ -9,7 +9,8 @@
 /**
  * An autocomplete object representing an item within the autocomplete list
  * @typedef {Object} AutocompleteItem
- * @property {string[]} parents - Optionally indicates if this item needs to have any of these parents (node texts for now).
+ * @property {string[]} parentsAll - Optionally indicates if this node item needs to have all of these parents (node texts for now).
+ * @property {string[]} parents - Optionally indicates if this node item needs to have any of these parents (node texts for now).
  * @property {string} extends_ - Optionally indicates if this item extends another existing one.
  * @property {string} text - Indicates the text to show; aka keyword to complete.
  * @property {string} hint - Indicates the html to show as the summary for the keyword.
@@ -567,8 +568,31 @@ export default class concepto {
             }
             return resp;
         };
+		// normalize AC objects
+		let auto2 = {};
+		Object.keys(auto).forEach((key) => {
+			const baseObj = {
+				id: key,
+				text: key,
+				type: '',
+				icons: [],
+				level: [],
+				parents: [],
+				parentsAll: [],
+				hint: '',
+				childrenTypes: [],
+				attributes: {},
+				events: {}
+			};
+			auto2[key] = {...baseObj,...auto[key]};
+			if (!auto2[key].text) {
+				auto2[key].text = key;
+			}
+		});
+		auto = {...auto2};
         /* add support for remapping attributes.'posibleChildren' key existance */
         Object.keys(auto).forEach((tag) => {
+			let cleanedTag = tag.replaceAll('*-','').replaceAll('-*','').replaceAll(':*',':');
             // add 'type' to auto[tag] if 'icons' contain 'idea'=view, 'help'=event, 'penguin'=script, 'desktop_new'=command
             if (auto[tag].type.trim()=='') {
                 if (auto[tag].icons && auto[tag].icons.includes('idea')) {
@@ -585,36 +609,41 @@ export default class concepto {
             Object.keys(auto[tag].attributes).forEach((attr_) => {
                 // remove all {icon:x} strings from attr_
                 let attr__ = attr_.replace(/{icon:[^}]*}/g,'');
+				cleanedTag = cleanedTag.replace(/{icon:[^}]*}/g,'');
                 let attr = auto[tag].attributes[attr_];
                 // also add the attribute to the auto object if it contains {icon:list} within its keyname
                 const attrIcons = extractIcons(attr_).icons;
 				if (attrIcons.length==1 && attrIcons[0]=='list') {
-					// if the only attribute icon is 'list', then process its 'type' as posible new ac tags
-					const typeNameForNewChildren = tag+'-'+attr__;
-					// add typeNameForNewChildren to attr childrenTypes
-					if (attr.childrenTypes && attr.childrenTypes.length>0) {
-						attr.childrenTypes.push(typeNameForNewChildren);
-					} else {
-						attr.childrenTypes = [typeNameForNewChildren];
-					}
 					if (attr.type.length>0) {
 						for (let attrType of attr.type.split(',')) {
-							//gen unique name for attrType (newTagName)
-							let newTagName = tag+'-'+attr__+'-'+attrType;
-							if (!auto[newTagName]) {
-								auto[newTagName] = {
-									text: attrType,
-									type: typeNameForNewChildren,
-									parents: [attr__],
-									icons: [],
-									level: [],
-									hint: `Value of ${attrType} for attribute ${attr__} of ${tag}`,
-									childrenTypes: ['none'],
-									attributes: {}
-								};
-							} else {
-								if (!auto[newTagName].parents.includes(tag)) {
-									auto[newTagName].parents.push(tag);
+							//omit some types like 'object' and 'array'
+							if (attrType!='object' && attrType!='array') {
+								// if the only attribute icon is 'list', then process its 'type' as posible new ac tags
+								const typeNameForNewChildren = cleanedTag+'-'+attr__+'-'+attrType;
+								// add typeNameForNewChildren to attr childrenTypes
+								if (attr.childrenTypes && attr.childrenTypes.length>0) {
+									attr.childrenTypes.push(typeNameForNewChildren);
+								} else {
+									attr.childrenTypes = [typeNameForNewChildren];
+								}
+								//gen unique name for attrType (newTagName)
+								let newTagName = cleanedTag+'-'+attr__+'-'+attrType;
+								if (!auto[newTagName]) {
+									auto[newTagName] = {
+										text: attrType,
+										type: typeNameForNewChildren,
+										parentsAll: [attr__],
+										parents: [attr__],
+										icons: [],
+										level: [],
+										hint: `Value of ${attrType} for attribute ${attr__} of ${tag}`,
+										childrenTypes: ['none'],
+										attributes: {}
+									};
+								} else {
+									if (!auto[newTagName].parents.includes(cleanedTag)) {
+										auto[newTagName].parents.push(cleanedTag);
+									}
 								}
 							}
 						}
@@ -622,23 +651,54 @@ export default class concepto {
 
 				}
 				if (attr_.indexOf('{icon:list}')!=-1) {
-					// add attribute itself as an AC item of the parent
+					// add attribute itself as an AC item of the parent					
                     let type__ = (attr_.indexOf('{icon:help}')!=-1)?'event-attribute':'attribute';
                     type__ = (attr_.indexOf('{icon:idea}')!=-1)?'view-attribute':type__;
-                    if (!auto[attr__]) {
-                        auto[attr__] = {
+                    let typeNameForNewChildren = cleanedTag+'-'+type__+'-'+attr__;
+					// add typeNameForNewChildren to attr childrenTypes
+					if (auto[tag].childrenTypes && auto[tag].childrenTypes.length>0) {
+						auto[tag].childrenTypes.push(typeNameForNewChildren);
+					} else {
+						auto[tag].childrenTypes = [typeNameForNewChildren];
+					}
+					//gen unique name for attrType (newTagName)
+					let newTagName = typeNameForNewChildren;
+					//
+					if (!auto[newTagName]) {
+                        auto[newTagName] = {
                             text: (attr.text)?attr.text:attr__,
-                            type: type__,
-                            parents: [tag],
+                            type: typeNameForNewChildren,
+							parentsAll: [cleanedTag],
+                            parents: [cleanedTag], //@TODO this should be parentTypes, or parentsAll (but IDE lacks support for it yet)
                             icons: extractIcons(attr_).icons,
                             level: [],
                             hint: attr.hint,
                             childrenTypes: (attr.childrenTypes)?attr.childrenTypes:[],
                             attributes: (attr.attributes)?attr.attributes:{}
                         };
+						if (attr.parentsAll && Array.isArray(attr.parentsAll)) {
+							auto[newTagName].parentsAll = Array.concat(attr.parentsAll,auto[newTagName].parentsAll);
+						}
+						// if attr.text also exists within auto[*].text and childrenTypes here is empty, 
+						// then copy childrenTypes and parentsAll from it
+						let targetAC = Object.keys(auto).filter((key)=>{
+							const item = auto[key];
+							if (item && auto[newTagName].type.indexOf(item.type)!=-1 && item.childrenTypes && item.childrenTypes.length>0 && item.text==auto[newTagName].text) {
+								return true;
+							}
+						});
+						const targetNode = (targetAC.length>0)?auto[targetAC[0]]:null;
+						//console.log('targetNode',targetNode);
+						const weNode = auto[newTagName];
+						if (targetNode && weNode.childrenTypes.length==0) {
+							auto[newTagName].childrenTypes = [...targetNode.childrenTypes];
+							if (targetNode.parentsAll.length>0 && weNode.parentsAll.length==0) {
+								auto[newTagName].parentsAll = [...targetNode.parentsAll];
+							}
+						}
                     } else {
                         // if it already existed, add to parents array if it was not there already
-                        if (!auto[attr__].parents.includes(tag)) auto[attr__].parents.push(tag);
+                        if (!auto[newTagName].parents.includes(cleanedTag)) auto[newTagName].parents.push(cleanedTag);
                     }
                     //
                 }
@@ -672,7 +732,7 @@ export default class concepto {
                 id: tag,
                 text: (auto[tag].text && auto[tag].text!='')?auto[tag].text:tag, //.replaceAll('*',''),
                 //text: tag, //.replaceAll('*',''),
-                childrenTypes: (auto[tag].childrenTypes)?auto[tag].childrenTypes:[],
+                childrenTypes: (auto[tag].childrenTypes)?auto[tag].childrenTypes.map((item)=>item.replace(/{icon:[^}]*}/g,'')):[],
                 type: (auto[tag].type)?auto[tag].type:'',
                 icons: auto[tag].icons,
                 level: auto[tag].level,
@@ -680,6 +740,7 @@ export default class concepto {
                 attributes: auto[tag].attributes,
                 events: (auto[tag].events)?auto[tag].events:{},
                 extends_: (auto[tag].extends_)?auto[tag].extends_:'',
+                parentsAll: (auto[tag].parents)?auto[tag].parentsAll:[],
                 parents: (auto[tag].parents)?auto[tag].parents:[],
             }
         });
@@ -727,7 +788,7 @@ export default class concepto {
 		//
 		let html = '';
 		for (let icon of icons) {
-			if (renderIcon) {
+			if (render.icon) {
 				html += render.icon(icon);
 			}
 		}
@@ -1006,6 +1067,7 @@ export default class concepto {
 	/**
 	* Adds the given definition for the generation of autocomplete files recods
 	* @param 	{String}	[extends_]			- extends autocomplete record;
+	* @param 	{Array}		[parentsAll]		- required node parents of this definition; empty means any; * means item must match all parents listed
 	* @param 	{Array}		[parents]			- posible node parents of this definition; empty means any; * means item must be partof
 	* @param 	{Array}		[childrenTypes]		- posible children type nodes; empty means no restrictions
 	* @param 	{String}	[id]				- Unique AC node identifier (usually the 'text')
@@ -1017,7 +1079,7 @@ export default class concepto {
 	* @param 	{Object}	[attributes]		- Possible node command attributes (ex. { 'id':{ required:true, type:'number', values:'1,2,3', hint:'id of datamodel' } })
 	* @return 	{Object}
 	*/
-	async addAutocompleteDefinition({id='',text='',type='',extends_='',parents=[], childrenTypes=[], icons=[],level=[],hint='',attributes={}, events={}}={}) {
+	async addAutocompleteDefinition({id='',text='',type='',extends_='',parentsAll=[],parents=[], childrenTypes=[], icons=[],level=[],hint='',attributes={}, events={}}={}) {
 		//this.autocomplete = { path:'path', records:{}, texts:{} }
 		//this.autocomplete.records[hash] = { keys,bestKey,text,icons,level,hint,attributes }
 		/*
@@ -1090,6 +1152,7 @@ export default class concepto {
 		};
 		//30-nov-22 for new autocomplete.json file support
 		this.autocomplete.json[id] = {
+			parentsAll,
 			parents,
 			childrenTypes,
 			text,

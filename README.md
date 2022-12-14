@@ -21,7 +21,7 @@ Concepto DSL Base Class: A base class (to be extended) for defining new language
     * _instance_
         * [.init()](#module_concepto+init)
         * [.autocompleteContentTemplate(record, render)](#module_concepto+autocompleteContentTemplate) ⇒ <code>string</code>
-        * [.addAutocompleteDefinition([extends_], [parents], [childrenTypes], [id], [text], [type], [icons], [level], [hint], [attributes])](#module_concepto+addAutocompleteDefinition) ⇒ <code>Object</code>
+        * [.addAutocompleteDefinition([extends_], [parentsAll], [parents], [childrenTypes], [id], [text], [type], [icons], [level], [hint], [attributes])](#module_concepto+addAutocompleteDefinition) ⇒ <code>Object</code>
         * [.reply_template([init])](#module_concepto+reply_template) ⇒ <code>Object</code>
         * [.onInit()](#module_concepto+onInit)
         * [.onAfterProcess(processedNode)](#module_concepto+onAfterProcess) ⇒ <code>Object</code>
@@ -89,7 +89,7 @@ Should return the rendered HTML
 
 <a name="module_concepto+addAutocompleteDefinition"></a>
 
-### concepto.addAutocompleteDefinition([extends_], [parents], [childrenTypes], [id], [text], [type], [icons], [level], [hint], [attributes]) ⇒ <code>Object</code>
+### concepto.addAutocompleteDefinition([extends_], [parentsAll], [parents], [childrenTypes], [id], [text], [type], [icons], [level], [hint], [attributes]) ⇒ <code>Object</code>
 Adds the given definition for the generation of autocomplete files recods
 
 **Kind**: instance method of [<code>concepto</code>](#module_concepto)  
@@ -97,6 +97,7 @@ Adds the given definition for the generation of autocomplete files recods
 | Param | Type | Description |
 | --- | --- | --- |
 | [extends_] | <code>String</code> | extends autocomplete record; |
+| [parentsAll] | <code>Array</code> | required node parents of this definition; empty means any; * means item must match all parents listed |
 | [parents] | <code>Array</code> | posible node parents of this definition; empty means any; * means item must be partof |
 | [childrenTypes] | <code>Array</code> | posible children type nodes; empty means no restrictions |
 | [id] | <code>String</code> | Unique AC node identifier (usually the 'text') |
@@ -499,7 +500,8 @@ An autocomplete object representing an item within the autocomplete list
 
 | Name | Type | Description |
 | --- | --- | --- |
-| parents | <code>Array.&lt;string&gt;</code> | Optionally indicates if this item needs to have any of these parents (node texts for now). |
+| parentsAll | <code>Array.&lt;string&gt;</code> | Optionally indicates if this node item needs to have all of these parents (node texts for now). |
+| parents | <code>Array.&lt;string&gt;</code> | Optionally indicates if this node item needs to have any of these parents (node texts for now). |
 | extends_ | <code>string</code> | Optionally indicates if this item extends another existing one. |
 | text | <code>string</code> | Indicates the text to show; aka keyword to complete. |
 | hint | <code>string</code> | Indicates the html to show as the summary for the keyword. |
